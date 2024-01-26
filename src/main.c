@@ -1,16 +1,18 @@
-#include <stdio.h>  /* printf fileno */    
-#include <getopt.h> /* getopt_long */ 
-#include <stdlib.h> /* abort */
+#include <stdio.h>      /* printf fileno fopen fseek ftell fread */    
+#include <getopt.h>     /* getopt_long */ 
+#include <stdlib.h>     /* abort */
+#include <inttypes.h>   /* uint32_t uint8_t */
 
 static int verbose_flag;
 
 void print_help(void);
-void crc8(void *bitstring);
+uint32_t crc32(void *bitstring);
 
 int main(int argc, char **argv) 
 {
     unsigned gol_ret;
     int ret = 0;
+
     while (1)
     {
         static struct option long_options[] =
@@ -21,7 +23,7 @@ int main(int argc, char **argv)
             {"file",    required_argument,  0,              'f'},
             {"stdin",   required_argument,  0,              's'},
             {"all",     no_argument,        0,              'a'},
-            {"crc8",    no_argument,        0,              'c'},
+            {"crc32",    no_argument,       0,             'e'},
             {0, 0, 0, 0}                                            /* "The last element of the array has to be filled with zeros." */
         };
 
@@ -33,6 +35,8 @@ int main(int argc, char **argv)
             break;
         }
 
+        char *file_buf;     // file contents buffer
+        size_t file_len;    // file length
         switch (gol_ret)
             {
             case 0:
@@ -51,20 +55,19 @@ int main(int argc, char **argv)
                 break;
 
             case 'f':
-                FILE *fp;
-                char buf[4096]; /* 4MiB limit */
-                fp = fopen(optarg, "r");
-                if (fp == NULL) {
-                    perror("Error opening file");
-                    ret = -1;
-                }
-                if (fgets(buf, sizeof(buf), fp)!=NULL) {
-                    /* writing content to stdout */
-                    for (unsigned i=0; i<sizeof(buf) ;i++) {
-                        putc(buf[i], stdout);
-                    }
-                }
-                fclose(fp);
+                FILE *f = fopen(optarg, "rb");
+                fseek(f, 0, SEEK_END);
+                long fsize = ftell(f);
+                fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
+
+                file = malloc(fsize + 1);
+                fread(file, fsize, 1, f);
+
+                // DEBUG
+                //printf("%s", file);
+
+                fclose(f);
+                file[fsize] = 0;
                 break;
             
             case 's':
@@ -120,57 +123,15 @@ void print_help(void)
     return;
 }
 
-
-
-/*  Calculate n-Bit CRC
-
-function crc(bit array bitString[1..len], int len) {
-    remainderPolynomial := polynomialForm(bitString[1..n])   // First n bits of the message
-    // A popular variant complements remainderPolynomial here; see § Preset to −1 below
-    for i from 1 to len {
-        remainderPolynomial := remainderPolynomial * x + bitString[i+n] * x0   // Define bitString[k]=0 for k>len
-        if coefficient of xn of remainderPolynomial = 1 {
-            remainderPolynomial := remainderPolynomial xor generatorPolynomial
-        }
-    }
-    // A popular variant complements remainderPolynomial here; see § Post-invert below
-    return remainderPolynomial
+uint32_t crc32(const uint8_t data[], size_t data_length) {
+	uint32_t crc32 = 0xFFFFFFFFu;
+	
+	for (size_t i = 0; i < data_length; i++) {
+		const uint32_t lookupIndex = (crc32 ^ data[i]) & 0xff;
+		crc32 = (crc32 >> 8) ^ CRCTable[lookupIndex];  // CRCTable is an array of 256 32-bit constants
+	}
+	
+	// Finalize the CRC-32 value by inverting all the bits
+	crc32 ^= 0xFFFFFFFFu;
+	return crc32;
 }
-
-function crc(bit array bitString[1..len], int len) {
-    remainderPolynomial := 0
-    // A popular variant complements remainderPolynomial here; see § Preset to −1 below
-    for i from 1 to len {
-        remainderPolynomial := remainderPolynomial xor (bitstring[i] * xn−1)
-        if (coefficient of xn−1 of remainderPolynomial) = 1 {
-            remainderPolynomial := (remainderPolynomial * x) xor generatorPolynomial
-        } else {
-            remainderPolynomial := (remainderPolynomial * x)
-        }
-    }
-    // A popular variant complements remainderPolynomial here; see § Post-invert below
-    return remainderPolynomial
-}
-
-*/
-
-/* Calculate n-bit CRC with Polynomial division with bytewise message XORing
-
-function crc(byte array string[1..len], int len) {
-    remainderPolynomial := 0
-    // A popular variant complements remainderPolynomial here; see § Preset to −1 below
-    for i from 1 to len {
-        remainderPolynomial := remainderPolynomial xor polynomialForm(string[i]) * xn−8
-        for j from 1 to 8 {    // Assuming 8 bits per byte
-            if coefficient of xn−1 of remainderPolynomial = 1 {
-                remainderPolynomial := (remainderPolynomial * x) xor generatorPolynomial
-            } else {
-                remainderPolynomial := (remainderPolynomial * x)
-            }
-        }
-    }
-    // A popular variant complements remainderPolynomial here; see § Post-invert below
-    return remainderPolynomial
-}
-
-*/
