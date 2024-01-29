@@ -1,13 +1,17 @@
 #include <stdio.h>      /* printf fileno fopen fseek ftell fread */    
 #include <getopt.h>     /* getopt_long */ 
 #include <stdlib.h>     /* abort */
-#include <inttypes.h>   /* uint32_t */
+//#include <inttypes.h> /* Uncomment in case you need portable printf for larger types like uint64_t */
+#include <stdint.h>     /* uint32_t */
+
+typedef unsigned __int128 uint128_t;
 
 static int verbose_flag = 0; 
 static int all_algo_flag = 0;
 
 void print_help(void);
 uint32_t crc32(char *bitstring_buf, size_t bitstring_len);
+uint128_t md5(char *bitstring_buf, size_t bitstring_len);
 
 int main(int argc, char **argv) 
 {
@@ -153,4 +157,19 @@ uint32_t crc32(char *bitstring_buf, size_t bitstring_len)
     }
 
     return crc32_string ^ 0xffffffffL;  /* return crc_string of bitstring_buf[0..bitstring_len-1] */
+}
+
+uint128_t md5(char *bitstring_buf, size_t bitstring_len)
+{
+    uint128_t md5_string = 0x0;
+    static unsigned desired_r = 448;   /* 512 - 64 */
+    int padding_len = 0;
+    
+    // pad input string until 64 bits less than a multiple of 512
+    padding_len = desired_r - (bitstring_len % 512);
+    if (padding_len < 0) {
+        padding_len = (padding_len * -1) + 448;
+    }
+
+    return md5_string;
 }
