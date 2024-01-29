@@ -1,12 +1,13 @@
 #include <stdio.h>      /* printf fileno fopen fseek ftell fread */    
 #include <getopt.h>     /* getopt_long */ 
 #include <stdlib.h>     /* abort */
-#include <inttypes.h>   /* uint32_t uint8_t */
+#include <inttypes.h>   /* uint32_t */
 
-static int verbose_flag;
+static int verbose_flag = 0; 
+static int all_algo_flag = 0;
 
 void print_help(void);
-uint32_t crc32(void *bitstring);
+uint32_t crc32(char *bitstring_buf, size_t bitstring_len);
 
 int main(int argc, char **argv) 
 {
@@ -18,25 +19,24 @@ int main(int argc, char **argv)
         static struct option long_options[] =
         {
             {"verbose", no_argument,        &verbose_flag,  1},     /* set verbosity flag */
-            {"brief",   no_argument,        &verbose_flag,  0},     /* default brief */
+            {"all",     no_argument,        &all_algo_flag, 1},
             {"help",    no_argument,        0,              'h'},
             {"file",    required_argument,  0,              'f'},
-            {"stdin",   required_argument,  0,              's'},
-            {"all",     no_argument,        0,              'a'},
-            {"crc32",    no_argument,       0,             'e'},
+            {"stdin",   required_argument,  0,              's'},   /* TODO: CHECK IF FILE SET AND REJECT */
+            {"crc32",    no_argument,       0,              'c'},
             {0, 0, 0, 0}                                            /* "The last element of the array has to be filled with zeros." */
         };
 
         int option_index = 0;   /* getopt_long stores the option index here. */
-        gol_ret = getopt_long(argc, argv, "h", long_options, &option_index);
+        gol_ret = getopt_long(argc, argv, "vahf:s:c", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (gol_ret == -1) {
             break;
         }
 
-        char *file_buf;     // file contents buffer
-        size_t file_len;    // file length
+        char *bitstring_buf;     // file contents buffer
+        size_t bitstring_len;    // file length
         switch (gol_ret)
             {
             case 0:
@@ -49,6 +49,12 @@ int main(int argc, char **argv)
                 }
                 printf("\n");
                 break;
+            case 'v':
+                verbose_flag = 1;
+                break;
+            case 'a':
+                all_algo_flag = 1;
+                break;
 
             case 'h':
                 print_help();
@@ -56,18 +62,21 @@ int main(int argc, char **argv)
 
             case 'f':
                 FILE *f = fopen(optarg, "rb");
-                fseek(f, 0, SEEK_END);
-                long fsize = ftell(f);
-                fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
+                fseek(f, 0, SEEK_END);  /* move fp to EOF, and ftell the num of bytes from beginning to fp*/
+                //long fsize = ftell(f);  
+                bitstring_len = ftell(f);
+                fseek(f, 0, SEEK_SET);  /* same as rewind(f) */
 
-                file = malloc(fsize + 1);
-                fread(file, fsize, 1, f);
+                bitstring_buf = malloc(bitstring_len + 1);
+                fread(bitstring_buf, bitstring_len, 1, f);
 
                 // DEBUG
-                //printf("%s", file);
+                if (verbose_flag) {
+                    printf("[VERBOSE] File Contents:\n%s\n", bitstring_buf);
+                }
 
                 fclose(f);
-                file[fsize] = 0;
+                bitstring_buf[bitstring_len] = 0;
                 break;
             
             case 's':
@@ -75,11 +84,10 @@ int main(int argc, char **argv)
                 printf("Reading from stdin is uninplemented!\n");
                 break;
             
-            case 'a':
-                // run all hashes (check if other already applied)
-                break;
-            
-            case 'c':   /* CRC-8 */
+            case 'c':   /* CRC-32 */
+                uint32_t crc32_string = crc32(bitstring_buf, bitstring_len);
+                printf("[OUTPUT] CRC32: %x\n", crc32_string);
+                if (! all_algo_flag) { break; }
                 break;  /* fall through to the last hashing algo */
             
             case '?':
@@ -112,26 +120,37 @@ int main(int argc, char **argv)
 void print_help(void)
 {
     printf("\n\
---help  | -h\t\tPrint help message\n\
---file  | -f\t\tSpecify a file to hash\n\
---crc8  | -c\t\tGenerate CRC-8 hash\n\
---crc16 | -d\t\tGenerate CRC-16 hash\n\
---crc32 | -e\t\tGenerate CRC-32 hash\n\
---crc64 | -f\t\tGenerate CRC-64 hash\n\
---all   | -a\t\tGenerate all hashes.\n\
-");
+--help      | -h\t\tPrint help message\n\
+--verbose   | \t\tPrint verbose output.\n\
+--file      | -f\t\tSpecify a file to hash\n\
+--all       | \t\tGenerate all hashes.\n\
+--crc32     | -c\t\tGenerate CRC-32 hash\n\
+    ");
     return;
 }
 
-uint32_t crc32(const uint8_t data[], size_t data_length) {
-	uint32_t crc32 = 0xFFFFFFFFu;
-	
-	for (size_t i = 0; i < data_length; i++) {
-		const uint32_t lookupIndex = (crc32 ^ data[i]) & 0xff;
-		crc32 = (crc32 >> 8) ^ CRCTable[lookupIndex];  // CRCTable is an array of 256 32-bit constants
-	}
-	
-	// Finalize the CRC-32 value by inverting all the bits
-	crc32 ^= 0xFFFFFFFFu;
-	return crc32;
+/* Implementation heavily influenced by/ stolen from w3's PNG */
+uint32_t crc32(char *bitstring_buf, size_t bitstring_len) 
+{
+    /* Table of CRCs of all 8-bit messages. */
+    uint32_t crc_table[256];
+    for (unsigned index=0; index<256; index++) {
+        uint32_t crc_table_val = (uint32_t)index;
+        for (unsigned unk=0; unk<8; unk++) {   /* What value is this representing?? */
+            if (crc_table_val & 1) {
+                crc_table_val = 0xedb88320L ^ (crc_table_val >> 1);
+            } else {
+                crc_table_val = crc_table_val >> 1;
+            }
+        }
+        crc_table[index] = crc_table_val;
+    }
+
+    uint32_t crc32_string = 0xffffffffL;
+
+    for (unsigned count=0; count<bitstring_len; count++) {
+        crc32_string = crc_table[(crc32_string ^ bitstring_buf[count]) & 0xff] ^ (crc32_string >> 8);
+    }
+
+    return crc32_string ^ 0xffffffffL;  /* return crc_string of bitstring_buf[0..bitstring_len-1] */
 }
