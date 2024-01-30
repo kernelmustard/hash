@@ -18,8 +18,7 @@ int main(int argc, char **argv)
     unsigned gol_ret;
     int ret = 0;
 
-    while (1)
-    {
+    while (1) {
         static struct option long_options[] =
         {
             {"verbose", no_argument,        &verbose_flag,  1},     /* set verbosity flag */
@@ -27,7 +26,8 @@ int main(int argc, char **argv)
             {"help",    no_argument,        0,              'h'},
             {"file",    required_argument,  0,              'f'},
             {"stdin",   required_argument,  0,              's'},   /* TODO: CHECK IF FILE SET AND REJECT */
-            {"crc32",    no_argument,       0,              'c'},
+            {"crc32",   no_argument,        0,              'c'},
+            {"md5",     no_argument,        0               'm'},
             {0, 0, 0, 0}                                            /* "The last element of the array has to be filled with zeros." */
         };
 
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
         size_t bitstring_len;    // file length
         switch (gol_ret)
             {
-            case 0:
+            case 1:
                 /* If this option set a flag, do nothing else now. */
                 if (long_options[option_index].flag != 0)
                     break;
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
                 }
                 printf("\n");
                 break;
-            case 'v':
+            case 'v':   /* support -v and -a  */
                 verbose_flag = 1;
                 break;
             case 'a':
@@ -124,11 +124,13 @@ int main(int argc, char **argv)
 void print_help(void)
 {
     printf("\n\
+./hash [ [--verbose|-v] | [--help|-h] | [--all|-a] ] [ [--crc32|-c] ] [--file|-f] <file>\n\
 --help      | -h\t\tPrint help message\n\
---verbose   | \t\tPrint verbose output.\n\
+--verbose   | -v\t\tPrint verbose output.\n\
 --file      | -f\t\tSpecify a file to hash\n\
---all       | \t\tGenerate all hashes.\n\
+--all       | -a\t\tGenerate all hashes.\n\
 --crc32     | -c\t\tGenerate CRC-32 hash\n\
+--md5       | -m\t\tGenerate MD5 hash\n\
     ");
     return;
 }
