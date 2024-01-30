@@ -1,8 +1,9 @@
 #include <stdio.h>      /* printf fileno fopen fseek ftell fread */    
 #include <getopt.h>     /* getopt_long */ 
-#include <stdlib.h>     /* abort */
+#include <stdlib.h>     /* abort abs */
 //#include <inttypes.h> /* Uncomment in case you need portable printf for larger types like uint64_t */
 #include <stdint.h>     /* uint32_t */
+#include <math.h>       /* sin floor */
 
 typedef unsigned __int128 uint128_t;
 
@@ -10,13 +11,12 @@ static int verbose_flag = 0;
 static int all_algo_flag = 0;
 
 void print_help(void);
-uint32_t crc32(char *bitstring_buf, size_t bitstring_len);
-uint128_t md5(char *bitstring_buf, size_t bitstring_len);
+uint32_t crc32(char *message, uint64_t message_len);
+void md5(char *message, uint64_t message_len, uint8_t result[16]);
 
 int main(int argc, char **argv) 
 {
     unsigned gol_ret;
-    int ret = 0;
 
     while (1) {
         static struct option long_options[] =
@@ -39,8 +39,8 @@ int main(int argc, char **argv)
             break;
         }
 
-        char *bitstring_buf;     // file contents buffer
-        size_t bitstring_len;    // file length
+        char *message = NULL;       /* file contents buffer */
+        uint64_t message_len = 0;   /* file length, 64 bits can hold the length of a 16 EiB file */ 
         switch (gol_ret)
             {
             case 1:
@@ -68,28 +68,34 @@ int main(int argc, char **argv)
                 FILE *f = fopen(optarg, "rb");
                 fseek(f, 0, SEEK_END);  /* move fp to EOF, and ftell the num of bytes from beginning to fp*/
                 //long fsize = ftell(f);  
-                bitstring_len = ftell(f);
+                message_len = ftell(f);
                 fseek(f, 0, SEEK_SET);  /* same as rewind(f) */
 
-                bitstring_buf = malloc(bitstring_len + 1);
-                fread(bitstring_buf, bitstring_len, 1, f);
+                if (message_len >= sizeof(uint32_t)) {  /* let message_len store large file lengths, but retrict file size to 4GiB */
+                    printf("[ERROR] File too large! The max size is %d.\n", sizeof(uint32_t));  /* possible to hash larger files with memory-mapping, but for now no large files */
+                    abort();
+                }
+
+                message = malloc(message_len + 1);
+                fread(message, message_len, 1, f);
 
                 // DEBUG
                 if (verbose_flag) {
-                    printf("[VERBOSE] File Contents:\n%s\n", bitstring_buf);
+                    printf("[VERBOSE] File Contents:\n%s\n", message);
                 }
 
                 fclose(f);
-                bitstring_buf[bitstring_len] = 0;
+                message[message_len] = 0;
                 break;
             
             case 's':
                 // read from stdin
-                printf("Reading from stdin is uninplemented!\n");
+                message = optarg;
+                message_len = sizeof(message);
                 break;
             
             case 'c':   /* CRC-32 */
-                uint32_t crc32_string = crc32(bitstring_buf, bitstring_len);
+                uint32_t crc32_string = crc32(message, message_len);
                 printf("[OUTPUT] CRC32: %x\n", crc32_string);
                 if (! all_algo_flag) { break; }
                 break;  /* fall through to the last hashing algo */
@@ -103,22 +109,16 @@ int main(int argc, char **argv)
             }
         }
 
-    /* Instead of reporting ‘--verbose’
-        and ‘--brief’ as they are encountered,
-        we report the final status resulting from them. */
-    if (verbose_flag) {
-        puts ("verbose flag is set\n");
-    }
-
-    /* Print any remaining command line arguments (not options). */
-    if (optind < argc)
+    /* Ignore any remaining command line arguments (not options). */
+    if (verbose_flag && optind < argc)
         {
         printf ("non-option ARGV-elements: ");
         while (optind < argc)
             printf ("%s ", argv[optind++]);
         putchar ('\n');
         }
-    return ret;
+    
+    return 0;
 }
 
 void print_help(void)
@@ -136,7 +136,7 @@ void print_help(void)
 }
 
 /* Implementation heavily influenced by/ stolen from w3's PNG */
-uint32_t crc32(char *bitstring_buf, size_t bitstring_len) 
+uint32_t crc32(char *message, uint64_t message_len) 
 {
     /* Table of CRCs of all 8-bit messages. */
     uint32_t crc_table[256];
@@ -144,7 +144,7 @@ uint32_t crc32(char *bitstring_buf, size_t bitstring_len)
         uint32_t crc_table_val = (uint32_t)index;
         for (unsigned unk=0; unk<8; unk++) {   /* What value is this representing?? */
             if (crc_table_val & 1) {
-                crc_table_val = 0xedb88320L ^ (crc_table_val >> 1);
+                crc_table_val = (uint32_t)0xedb88320 ^ (crc_table_val >> 1);
             } else {
                 crc_table_val = crc_table_val >> 1;
             }
@@ -152,26 +152,61 @@ uint32_t crc32(char *bitstring_buf, size_t bitstring_len)
         crc_table[index] = crc_table_val;
     }
 
-    uint32_t crc32_string = 0xffffffffL;
+    uint32_t crc32_string = 0xffffffff;
 
-    for (unsigned count=0; count<bitstring_len; count++) {
-        crc32_string = crc_table[(crc32_string ^ bitstring_buf[count]) & 0xff] ^ (crc32_string >> 8);
+    for (unsigned count=0; count<message_len; count++) {
+        crc32_string = crc_table[(crc32_string ^ message[count]) & 0xff] ^ (crc32_string >> 8);
     }
 
-    return crc32_string ^ 0xffffffffL;  /* return crc_string of bitstring_buf[0..bitstring_len-1] */
+    return crc32_string ^ (uint32_t)0xffffffff;  /* return crc32_string of message[0..message_len-1] */
 }
 
-uint128_t md5(char *bitstring_buf, size_t bitstring_len)
+/* written with great assistance from RFC1321 */
+void md5(char *message, uint64_t message_len, uint8_t result[16])
 {
-    uint128_t md5_string = 0x0;
-    static unsigned desired_r = 448;   /* 512 - 64 */
-    int padding_len = 0;
-    
-    // pad input string until 64 bits less than a multiple of 512
-    padding_len = desired_r - (bitstring_len % 512);
-    if (padding_len < 0) {
-        padding_len = (padding_len * -1) + 448;
+
+    uint8_t message_array[message_len+64+8] = { 0 };    /* init byte array with (actual message length) + (max padding length of 512 bits/64 bytes) + (64 bits/8 bytes of number indicating message length) */ 
+    uint32_t message_index = 0;
+    for (unsigned count=0; count<message_len; count++) {   /* read message into array */ 
+        message_array[message_index] = message[message_index];
+        message_index++;    /* either this, or increment before next write to array */
     }
 
-    return md5_string;
+    /* pad input string until 64 bits less than a multiple of 512 (begin with 1) */
+    uint64_t padding_len = 0;
+    int scratch_len = 448 - (message_len % 512);
+    if (scratch_len < 0) {
+        padding_len = (scratch_len * -1) + 448;
+    } else if (scratch_len == 0) {
+        padding_len = 512;  /* if already 448, pad 512 ("Padding is always performed, even if the length of the message is already congruent to 448, modulo 512.") */ 
+    }
+
+    message_array[message_index] = 0x80;    /* 1000 0000 */
+    message_index++;
+    for (unsigned count=0; count<(padding_len-1); count++) {
+        message_index++;    /* array initialized to 0, just increment counter */
+    }
+
+    /* Append 64 bits of message length, low-order first */
+    uint32_t message_len_low = message_len & (uint64_t)0x00000000FFFFFFFF;  /* append lower end first */
+    uint32_t message_len_high = message_len & (uint64_t)0xFFFFFFFF00000000;
+    message_array[message_index] = message_len_low;
+    message_index+=32;
+    message_array[message_index] = message_len_high;
+    message_index+=32;
+
+    /* Initialize Message Digest buffer, low-order first */
+    uint32_t 
+    uint32_t a = 0x67452301;
+    uint32_t b = 0xefcdab89;
+    uint32_t c = 0x98badcfe;
+    uint32_t d = 0x10325476;
+
+    /* Calculate the table */
+    uint32_t table[64], shift_table[64];
+    for (unsigned count=0; count<sizeof(table); count++) {
+        table[count] = floor(4294967296 * abs(sin(count)));
+    }
+
+    return result;
 }
