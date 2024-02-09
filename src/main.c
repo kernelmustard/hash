@@ -71,8 +71,8 @@ int main(int argc, char **argv)
                 stream_len = ftell(stream);
                 fseek(stream, 0, SEEK_SET);  // same as rewind(f)
 
-                if (stream_len >= (2^32)) {  // retrict size to ~4GiB
-                    printf("[ERROR] File too large! The max size is %d.\n", 2^32);  // possible to hash larger files with memory-mapping, but for now no large files
+                if (stream_len >= pow(2,32)) {  // retrict size to ~4GiB
+                    printf("[ERROR] File too large! The max size is %f.\n", pow(2,32));  // possible to hash larger files with memory-mapping, but for now no large files
                     abort();
                 }
                 break;
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
                 all_algo_flag = 1;
             case 'c':
                 uint32_t crc32_result = crc32(stream, stream_len);
-                printf("CRC32\t%d", crc32_result);
+                printf("CRC32\t%d\n", crc32_result);
                 stream_len = sizeof(message);
                 if (all_algo_flag != 0) { // if not all algo's, break
                     fclose(stream);
@@ -92,8 +92,8 @@ int main(int argc, char **argv)
                 }
             case 'm':
                 uint8_t md5_result[16] = { 0 };
-                md5(stream, stream_len, md5_result);
-                printf("MD5\t");
+                md5(stream, stream_len, &md5_result);
+                printf("MD5\t%x\n", *md5_result);
                 if (all_algo_flag != 0) { // if not all algo's, break
                     fclose(stream);
                     break; 
