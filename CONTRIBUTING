@@ -1,0 +1,21 @@
+# Honesty
+Honestly I don't expect/want any contributors, but this seemed like the best standard file to note coding standards.
+
+# Functions
+```c
+int main(int argc, char *argv)
+{
+    // code
+}
+```
+
+# Flow Control
+```c
+for (int i=0; i<big; i++) {
+    // stuff and things
+}
+```
+
+# Exiting
+- `return` for expected function exit
+- `exit( RELEVANT_ERROR_CODE )` for error exit

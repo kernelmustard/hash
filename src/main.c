@@ -1,12 +1,14 @@
+#include "crc.c"
+#include "md5.c"
+
+#define _GNU_SOURCE
+
 #include <stdio.h>      // printf fileno fopen fseek ftell fread
 #include <getopt.h>     // getopt_long
 #include <stdlib.h>     // abort abs
 //#include <inttypes.h> // Uncomment in case you need portable printf for larger types like uint64_t
 #include <stdint.h>     // uintX_t
 #include <math.h>       // sin floor
-
-#include "crc.c"
-#include "md5.c"
 
 typedef unsigned __int128 uint128_t;
 
@@ -19,8 +21,7 @@ int main(int argc, char **argv)
 {
     unsigned gol_ret;
     FILE *stream = NULL;    // store input message
-    uint64_t stream_len = 0;
-
+    uint64_t stream_len = 0;    // file length, 64 bits can hold the length of a 16 EiB file
 
     while (1) {
         static struct option long_options[] =
@@ -43,8 +44,6 @@ int main(int argc, char **argv)
             break;
         }
 
-        char *message = NULL;       // file contents buffer
-        uint64_t stream_len = 0;   // file length, 64 bits can hold the length of a 16 EiB file
         switch (gol_ret)
             {
             case 1:
@@ -67,6 +66,7 @@ int main(int argc, char **argv)
 
             case 'f':
                 stream = fopen(optarg, "rb");
+
                 fseek(stream, 0, SEEK_END);  // move fp to EOF, and ftell the num of bytes from beginning to fp
                 stream_len = ftell(stream);
                 fseek(stream, 0, SEEK_SET);  // same as rewind(f)
@@ -78,31 +78,29 @@ int main(int argc, char **argv)
                 break;
             case 's':
                 // read from stdin
-                message = optarg;
                 
             case 'a':
                 all_algo_flag = 1;
             case 'c':
-                uint32_t crc32_result = crc32(stream, stream_len);
-                printf("CRC32\t%d\n", crc32_result);
-                stream_len = sizeof(message);
-                if (all_algo_flag != 0) { // if not all algo's, break
-                    fclose(stream);
+                int32_t crc32_result = crc32(stream, stream_len);
+                printf("CRC32\t%x\n", crc32_result);
+                if (! all_algo_flag) {  // if not all algo's, break
+                    if (stream != NULL) { fclose(stream); }
                     break; 
                 }
             case 'm':
                 uint8_t md5_result[16] = { 0 };
-                md5(stream, stream_len, &md5_result);
+                md5(stream, stream_len, &(md5_result[0]));
                 printf("MD5\t%x\n", *md5_result);
-                if (all_algo_flag != 0) { // if not all algo's, break
-                    fclose(stream);
+                if (! all_algo_flag) { // if not all algo's, break
+                    if (stream != NULL) { fclose(stream); }
                     break; 
                 }
-                fclose(stream); // fall through to last algo
+                if (stream != NULL) { fclose(stream); } // fall through to last algo
                 break;
             
             case '?':
-                /* getopt_long already printed an error message. */
+                // getopt_long already printed an error message.
                 break;
 
             default:
@@ -110,7 +108,7 @@ int main(int argc, char **argv)
             }
         }
 
-    /* Ignore any remaining command line arguments (not options). */
+    // Ignore any remaining command line arguments (not options)
     if (verbose_flag && optind < argc)
         {
         printf ("non-option ARGV-elements: ");
