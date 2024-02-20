@@ -1,5 +1,9 @@
+.DEFAULT_GOAL: prod
 CC=gcc
-CC_OPTS=-Wall -o
+CC_OPTS=-lm -Wall -Wextra -Og -o
 
-main: src/main.c
-	$(CC) src/main.c $(CC_OPTS) ./hash
+dev: src/main.c
+	$(CC) src/main.c -Og $(CC_OPTS) ./hash
+
+prod: src/main.c
+	$(CC) src/main.c -O3 $(CC_OPTS) ./hash

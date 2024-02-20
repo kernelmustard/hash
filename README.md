@@ -1,6 +1,9 @@
 # hash
 (useless) reimplementation of common hashing algorithms
 
+# dev
+Trying to figure out how to parse args in a certain order, right now just specify hashing algo (or --all) last.
+
 # sources
 - https://www.w3.org/TR/png/#D-CRCAppendix
 - https://users.ece.cmu.edu/~koopman/crc/index.html
