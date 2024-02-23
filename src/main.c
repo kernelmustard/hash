@@ -9,7 +9,6 @@ int main(int argc, char **argv) {
   int gol_ret;
   FILE *stream = NULL; // ptf to input message stream
   uint64_t stream_len = 0; // stream length, 64 bits can hold the length of a 16 EiB file
-  char *stream_buffer;
 
   if (argc < 2) {
     printf("Not enough arguments!\n");
@@ -40,12 +39,6 @@ int main(int argc, char **argv) {
     switch (gol_ret) {
       case 1:
         // If this option set a flag, do nothing else now.
-        if (long_options[option_index].flag != 0) { break; }
-        printf("option %s", long_options[option_index].name);
-        if (optarg) {
-          printf(" with arg %s", optarg);
-        }
-        printf("\n");
         break;
       case 'v': // support -v
         verbose_flag = 1;
@@ -64,55 +57,61 @@ int main(int argc, char **argv) {
 
         if (stream_len >= pow(2, 32)) { // retrict size to ~4GiB
           printf("[ERROR] File too large! The max size is %f.\n", pow(2, 32)); // possible to hash larger files with memory-mapping, but for now no large files
-          abort();
+          exit(-1);
         }
         break;
       case 's':
         stream_len = sizeof(optarg);
-        stream = open_memstream(&stream_buffer, &stream_len);
-        fprintf(stream, "%s", optarg);
+        stream = tmpfile();
+        if (stream == NULL) {
+          perror("Unable to create tmpfile!\n");
+          exit(-1);
+        }
+        for (unsigned i = 0; optarg[i] != '\0'; i++) {
+          fputc(optarg[i], stream);
+        }
+        rewind(stream);
         break;
 
       case 'a':
         all_algo_flag = 1;
         // fall through
       case 'c':
-        uint32_t crc32_result = crc32(stream, stream_len);
-        printf("CRC32\t%x\n", crc32_result);
+        uint8_t crc32_result[4] = { 0 };
+        crc32(stream, stream_len, &(crc32_result[0]));
+        printf("CRC32\t");
+        for (unsigned i = 0; i < 4; i++) {
+          printf("%02x", crc32_result[i]);
+        }
+        printf("\n");
         if (!all_algo_flag) { // if not all algo's, break
-          if (stream != NULL) {
-            fclose(stream);
-          }
-        break;
-      }
-      // fall through
-    case 'm':
-      uint8_t md5_result[16] = {0};
-      md5(stream, stream_len, &(md5_result[0]));
-      printf("MD5\t%x\n", *md5_result);
-      if (!all_algo_flag) { // if not all algo's, break
-        if (stream != NULL) {
-          fclose(stream);
+          if (stream != NULL) { fclose(stream); }
+          break;
         }
-        if (sizeof(stream_buffer) > 0) {
-          free(stream_buffer);
+        // fall through
+      case 'm':
+        uint8_t md5_result[16] = { 0 };
+        md5(stream, &(md5_result[0]));
+        printf("MD5\t");
+        for (unsigned i = 0; i < 16; i++) {
+          printf("%02x", md5_result[i]);
         }
+        printf("\n");
+        if (!all_algo_flag) { // if not all algo's, break
+          if (stream != NULL) { fclose(stream); }
+          break;
+        }
+        if (stream != NULL) { fclose(stream); }
         break;
-      }
-      if (stream != NULL) {
-        fclose(stream);
-      }
-      break;
 
-    case '?':
-      // getopt_long already printed an error message.
-      break;
+      case '?':
+        // getopt_long already printed an error message.
+        break;
 
-    default:
-      abort();
+      default:
+        exit(-1);
     }
   }
-
   return 0;
 }
 

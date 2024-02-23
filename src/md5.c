@@ -8,10 +8,10 @@
  */
 
 // MD5 Algorithm constants
-static uint32_t A = 0x67452301;
-static uint32_t B = 0xefcdab89;
-static uint32_t C = 0x98badcfe;
-static uint32_t D = 0x10325476;
+#define A 0x67452301;
+#define B 0xefcdab89;
+#define C 0x98badcfe;
+#define D 0x10325476;
 
 static uint32_t S[] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
                         5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
@@ -57,25 +57,133 @@ uint32_t rotate_left(uint32_t x, uint32_t n)
   return (x << n) | (x >> (32 - n));
 }
 
-// initialize context used to track buffers and digest
-void ctx_init(MD5Context *ctx)
+void md5_step(uint32_t *buffer, uint32_t *input)
 {
-  ctx->size = (uint64_t)0;
+  uint32_t AA = buffer[0];
+  uint32_t BB = buffer[1];
+  uint32_t CC = buffer[2];
+  uint32_t DD = buffer[3];
 
-  ctx->buffer[0] = A;
-  ctx->buffer[1] = B;
-  ctx->buffer[2] = C;
-  ctx->buffer[3] = D;
+  uint32_t E;
+
+  unsigned int j;
+
+  for (unsigned int i = 0; i < 64; ++i) {
+    switch (i / 16) {
+      case 0:
+        E = F(BB, CC, DD);
+        j = i;
+        break;
+      case 1:
+        E = G(BB, CC, DD);
+        j = ((i * 5) + 1) % 16;
+        break;
+      case 2:
+        E = H(BB, CC, DD);
+        j = ((i * 3) + 5) % 16;
+        break;
+      default:
+        E = I(BB, CC, DD);
+        j = (i * 7) % 16;
+        break;
+    }
+
+    uint32_t temp = DD;
+    DD = CC;
+    CC = BB;
+    BB = BB + rotate_left(AA + E + K[i] + input[j], S[i]);
+    AA = temp;
+  }
+
+  buffer[0] += AA;
+  buffer[1] += BB;
+  buffer[2] += CC;
+  buffer[3] += DD;
 
   return;
 }
 
-void md5(FILE *stream, uint64_t stream_len, uint8_t result[16])
+void md5_update(MD5Context *ctx, uint8_t *input_buffer, size_t input_len)
+{
+  uint32_t input[16];
+  unsigned int offset = ctx->size % 64;
+  ctx->size += (uint64_t)input_len;
+
+  for (unsigned i = 0; i < input_len; ++i) {
+    ctx->input[offset++] = (uint8_t)*(input_buffer + i);
+
+    if (offset % 64 == 0) {
+      for (unsigned j = 0; j < 16; ++j) {
+        input[j] = (uint32_t)(ctx->input[(j * 4) + 3]) << 24 |
+                   (uint32_t)(ctx->input[(j * 4) + 2]) << 16 |
+                   (uint32_t)(ctx->input[(j * 4) + 1]) <<  8 |
+                   (uint32_t)(ctx->input[(j * 4)]);
+      }
+      md5_step(ctx->buffer, input);
+      offset = 0;
+    }
+  }
+  return;
+}
+
+void md5_finalize(MD5Context *ctx)
+{
+  uint32_t input[16];
+  unsigned int offset = ctx->size % 64;
+  unsigned int padding_length = offset < 56 ? 56 - offset : (56 + 64) - offset;
+
+  md5_update(ctx, PADDING, padding_length);
+  ctx->size -= (uint64_t)padding_length;
+
+  for(unsigned int j = 0; j < 14; ++j){
+    input[j] = (uint32_t)(ctx->input[(j * 4) + 3]) << 24 |
+               (uint32_t)(ctx->input[(j * 4) + 2]) << 16 |
+               (uint32_t)(ctx->input[(j * 4) + 1]) <<  8 |
+               (uint32_t)(ctx->input[(j * 4)]);
+  }
+  input[14] = (uint32_t)(ctx->size * 8);
+  input[15] = (uint32_t)((ctx->size * 8) >> 32);
+
+  md5_step(ctx->buffer, input);
+
+  for(unsigned int i = 0; i < 4; ++i){
+    ctx->digest[(i * 4) + 0] = (uint8_t)((ctx->buffer[i] & 0x000000ff));
+    ctx->digest[(i * 4) + 1] = (uint8_t)((ctx->buffer[i] & 0x0000ff00) >>  8);
+    ctx->digest[(i * 4) + 2] = (uint8_t)((ctx->buffer[i] & 0x00ff0000) >> 16);
+    ctx->digest[(i * 4) + 3] = (uint8_t)((ctx->buffer[i] & 0xff000000) >> 24);
+  }
+  return;
+}
+
+// initialize context used to track buffers and digest
+void md5_init(MD5Context *ctx)
+{
+  ctx->size = (uint64_t)0;
+
+  ctx->buffer[0] = (uint32_t)A;
+  ctx->buffer[1] = (uint32_t)B;
+  ctx->buffer[2] = (uint32_t)C;
+  ctx->buffer[3] = (uint32_t)D;
+
+  return;
+}
+
+void md5(FILE *stream, uint8_t *md5_result)
 {
   MD5Context ctx; // instantiate context struct
-  ctx_init(&ctx);
+  md5_init(&ctx);
 
-  
+  char *input_buffer = malloc(1024);
+  size_t input_size = 0;
 
+  while((input_size = fread(input_buffer, 1, 1024, stream)) > 0){
+    md5_update(&ctx, (uint8_t *)input_buffer, input_size);
+  }
+
+  md5_finalize(&ctx);
+
+  free(input_buffer);
+
+  memcpy(md5_result, ctx.digest, 16);
   return;
 }

@@ -1,7 +1,7 @@
 #include "crc.h"
 
-// yoinked and twisted from w3's PNG
-uint32_t crc32(FILE *stream, uint64_t stream_len) {
+void crc32(FILE *stream, uint64_t stream_len, uint8_t *crc32_result) 
+{
   if (stream == NULL) {
     printf("WACK!\n");
   }
@@ -10,10 +10,6 @@ uint32_t crc32(FILE *stream, uint64_t stream_len) {
   char message[stream_len];
   memset(message, '\0', stream_len);
   size_t ret = fread(message, sizeof(message[0]), stream_len, stream);
-  if (ret != stream_len) {
-    printf("Failed to parse file!\n");
-    return -1;
-  }
 
   // Table of CRCs of all 8-bit messages.
   uint32_t crc_table[256];
@@ -35,5 +31,6 @@ uint32_t crc32(FILE *stream, uint64_t stream_len) {
     crc32_string = crc_table[(crc32_string ^ message[count]) & 0xff] ^ (crc32_string >> 8);
   }
 
-  return crc32_string ^ (uint32_t)0xffffffff; // return crc32_string of message[0..stream_len-1]
+  crc32_string ^= (uint32_t)0xffffffff; // return crc32_string of message[0..stream_len-1]
+  memcpy(crc32_result, &crc32_string, 4);
 }
