@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
-void crc(FILE *stream, uint64_t stream_len, uint8_t *crc32_result);
+void crc32(FILE *stream, uint64_t stream_len, uint32_t *crc32_result);
+void crc32_table(void);
+
 
 #endif

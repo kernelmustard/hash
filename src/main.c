@@ -18,14 +18,14 @@ int main(int argc, char **argv) {
 
   while (1) {
     static struct option long_options[] = {
-        {"verbose", no_argument,        &verbose_flag, 1}, // set verbosity flag
-        {"all",     no_argument,        &all_algo_flag, 1},
-        {"help",    no_argument,        0, 'h'},
-        {"file",    required_argument,  0, 'f'},
-        {"stdin",   required_argument,  0, 's'}, // TODO: CHECK IF FILE SET AND REJECT
-        {"crc32",   no_argument,        0, 'c'},
-        {"md5",     no_argument,        0, 'm'},
-        {0, 0, 0, 0} // "The last element of the array has to be filled with zeros."
+      {"verbose", no_argument,        &verbose_flag, 1}, // set verbosity flag
+      {"all",     no_argument,        &all_algo_flag, 1},
+      {"help",    no_argument,        0, 'h'},
+      {"file",    required_argument,  0, 'f'},
+      {"string",  required_argument,  0, 's'}, // TODO: CHECK IF FILE SET AND REJECT
+      {"crc32",   no_argument,        0, 'c'},
+      {"md5",     no_argument,        0, 'm'},
+      {0, 0, 0, 0} // "The last element of the array has to be filled with zeros."
     };
 
     int option_index = 0; // getopt_long stores the option index here
@@ -67,6 +67,9 @@ int main(int argc, char **argv) {
           perror("Unable to create tmpfile!\n");
           exit(-1);
         }
+        // DEBUG
+        // crc32 showing error reading string from stdin, (md5 not having issues, no issue crc32ing a file either)
+
         for (unsigned i = 0; optarg[i] != '\0'; i++) {
           fputc(optarg[i], stream);
         }
@@ -77,13 +80,9 @@ int main(int argc, char **argv) {
         all_algo_flag = 1;
         // fall through
       case 'c':
-        uint8_t crc32_result[4] = { 0 };
-        crc32(stream, stream_len, &(crc32_result[0]));
-        printf("CRC32\t");
-        for (unsigned i = 0; i < 4; i++) {
-          printf("%02x", crc32_result[i]);
-        }
-        printf("\n");
+        uint32_t crc32_result = 0;
+        crc32(stream, stream_len, &crc32_result);
+        printf("CRC32\t%x\n", crc32_result);
         if (!all_algo_flag) { // if not all algo's, break
           if (stream != NULL) { fclose(stream); }
           break;
