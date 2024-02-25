@@ -13,3 +13,5 @@
 - https://datatracker.ietf.org/doc/html/rfc1321
 - https://cs.indstate.edu/~fsagar/doc/paper.pdf
 - https://github.com/Zunawe/md5-c/
+
+- https://datatracker.ietf.org/doc/html/rfc3174 

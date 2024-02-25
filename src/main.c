@@ -69,7 +69,6 @@ int main(int argc, char **argv) {
           perror("Unable to create tmpfile!\n");
           exit(-1);
         }
-        // DEBUG
         // crc32 showing error reading string from stdin, (md5 not having issues, no issue crc32ing a file either)
 
         for (unsigned i = 0; optarg[i] != '\0'; i++) {
@@ -81,7 +80,7 @@ int main(int argc, char **argv) {
       case 'a':
         all_algo_flag = 1;
         // fall through
-      case 'c':
+      case 'c': {
         uint32_t crc32_result = 0;
         crc32(stream, stream_len, &crc32_result);
         printf("CRC32\t%x\n", crc32_result);
@@ -89,24 +88,29 @@ int main(int argc, char **argv) {
           if (stream != NULL) { fclose(stream); }
           break;
         }
+      }
         // fall through
-      case 'm':
+      case 'm': { 
         uint8_t md5_result[16] = { 0 };
         md5(stream, &(md5_result[0]));
         printf("MD5\t");
-        for (unsigned i = 0; i < 16; i++) {
-          printf("%02x", md5_result[i]);
-        }
+        for (unsigned i = 0; i < 16; i++) { printf("%02x", md5_result[i]); }
         printf("\n");
         if (!all_algo_flag) { // if not all algo's, break
           if (stream != NULL) { fclose(stream); }
           break;
         }
+      }
         // fall through
-      case 'o':
-        sha1();
+      case 'o': {
+        uint8_t sha1_result[20] = { 0 };
+        sha1(stream, &(sha1_result[0]));
+        printf("SHA1\t");
+        for (unsigned i = 0; i < 20; i++) { printf("%02x", sha1_result[i]); }
+        printf("\n");
         if (stream != NULL) { fclose(stream); }
         break;
+      }
 
       case '?':
         // getopt_long already printed an error message.

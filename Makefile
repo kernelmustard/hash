@@ -1,6 +1,6 @@
 .DEFAULT_GOAL: prod
 CC=gcc
-CC_OPTS=-lm -Wall -Wextra -o
+CC_OPTS=-std=c17 -pedantic -lm -Wall -Wextra -o
 
 dev: src/main.c
 	$(CC) src/main.c -Og $(CC_OPTS) ./hash
@@ -8,7 +8,7 @@ dev: src/main.c
 prod: src/main.c
 	$(CC) src/main.c -O3 $(CC_OPTS) ./hash
 
-test: crc32 md5
+test: crc32 md5 sha1
 
 crc32: ./hash
 	echo "\n\n"
@@ -25,3 +25,11 @@ md5: ./hash
 	echo ""
 	./hash --string "./hash" --md5
 	bash -c 'md5sum <(echo -n "./hash")'
+
+sha1: ./hash
+	echo "\n\n"
+	./hash --file ./hash --sha1
+	sha1sum ./hash
+	echo ""
+	./hash --string "./hash" --sha1
+	bash -c 'sha1sum <(echo -n "./hash")'

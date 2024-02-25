@@ -26,5 +26,5 @@ void crc32(FILE *stream, uint64_t stream_len, uint32_t *crc32_result)
     crc32_string = crc_table[(crc32_string ^ message[count]) & 0xff] ^ (crc32_string >> 8);
   }
 
-  *crc32_result = crc32_string ^ (uint32_t)0xffffffff; // return crc32_string of message[0..stream_len-1]
+  *crc32_result = crc32_string ^ (uint32_t)0xffffffff; // return 1s complement of crc32_string (used message[0..stream_len-1])
 }

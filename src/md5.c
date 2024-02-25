@@ -8,10 +8,10 @@
  */
 
 // MD5 Algorithm constants
-#define A 0x67452301;
-#define B 0xefcdab89;
-#define C 0x98badcfe;
-#define D 0x10325476;
+static uint32_t A = 0x67452301U;
+static uint32_t B = 0xefcdab89U;
+static uint32_t C = 0x98badcfeU;
+static uint32_t D = 0x10325476U;
 
 static uint32_t S[] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
                         5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
@@ -103,7 +103,7 @@ void md5_step(uint32_t *buffer, uint32_t *input)
   return;
 }
 
-void md5_update(MD5Context *ctx, uint8_t *input_buffer, size_t input_len)
+void md5_update(md5_context *ctx, uint8_t *input_buffer, size_t input_len)
 {
   uint32_t input[16];
   unsigned int offset = ctx->size % 64;
@@ -126,7 +126,7 @@ void md5_update(MD5Context *ctx, uint8_t *input_buffer, size_t input_len)
   return;
 }
 
-void md5_finalize(MD5Context *ctx)
+void md5_finalize(md5_context *ctx)
 {
   uint32_t input[16];
   unsigned int offset = ctx->size % 64;
@@ -156,7 +156,7 @@ void md5_finalize(MD5Context *ctx)
 }
 
 // initialize context used to track buffers and digest
-void md5_init(MD5Context *ctx)
+void md5_init(md5_context *ctx)
 {
   ctx->size = (uint64_t)0;
 
@@ -170,20 +170,20 @@ void md5_init(MD5Context *ctx)
 
 void md5(FILE *stream, uint8_t *md5_result)
 {
-  MD5Context ctx; // instantiate context struct
+  md5_context ctx; // instantiate context struct
   md5_init(&ctx);
 
-  char *input_buffer = malloc(1024);
+  uint8_t *input_buffer = malloc(1024);
   size_t input_size = 0;
 
   while((input_size = fread(input_buffer, 1, 1024, stream)) > 0){
-    md5_update(&ctx, (uint8_t *)input_buffer, input_size);
+    md5_update(&ctx, input_buffer, input_size);
   }
 
   md5_finalize(&ctx);
 
   free(input_buffer);
-
+  
   memcpy(md5_result, ctx.digest, 16);
   return;
 }
