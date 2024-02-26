@@ -7,6 +7,7 @@ dev: src/main.c
 
 prod: src/main.c
 	$(CC) src/main.c -O3 $(CC_OPTS) ./hash
+	strip -s ./hash
 
 test: crc32 md5 sha1
 

@@ -1,6 +1,6 @@
 #include "sha1.h"
 
-#define sha1_circular_shift(bits,word) (((word) << (bits)) | ((word) >> (32-(bits))))
+#define sha1_circular_lshift(bits,word) (((word) << (bits)) | ((word) >> (32-(bits))))
 
 int sha1_init(sha1_context *ctx)
 {
@@ -40,7 +40,7 @@ void sha1_step(sha1_context *ctx)
         W[t] |= ctx->message_block[t * 4 + 3];
     }
 
-    for(t = 16; t < 80; t++) { W[t] = sha1_circular_shift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]); }
+    for(t = 16; t < 80; t++) { W[t] = sha1_circular_lshift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]); }
 
     A = ctx->intermediate_hash[0];
     B = ctx->intermediate_hash[1];
@@ -49,38 +49,38 @@ void sha1_step(sha1_context *ctx)
     E = ctx->intermediate_hash[4];
 
     for(t = 0; t < 20; t++) {
-        temp =  sha1_circular_shift(5,A) + ((B & C) | ((~B) & D)) + E + W[t] + K[0];
+        temp =  sha1_circular_lshift(5,A) + ((B & C) | ((~B) & D)) + E + W[t] + K[0];
         E = D;
         D = C;
-        C = sha1_circular_shift(30,B);
+        C = sha1_circular_lshift(30,B);
 
         B = A;
         A = temp;
     }
 
     for(t = 20; t < 40; t++) {
-        temp = sha1_circular_shift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
+        temp = sha1_circular_lshift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
         E = D;
         D = C;
-        C = sha1_circular_shift(30,B);
+        C = sha1_circular_lshift(30,B);
         B = A;
         A = temp;
     }
 
     for(t = 40; t < 60; t++) {
-        temp = sha1_circular_shift(5,A) + ((B & C) | (B & D) | (C & D)) + E + W[t] + K[2];
+        temp = sha1_circular_lshift(5,A) + ((B & C) | (B & D) | (C & D)) + E + W[t] + K[2];
         E = D;
         D = C;
-        C = sha1_circular_shift(30,B);
+        C = sha1_circular_lshift(30,B);
         B = A;
         A = temp;
     }
 
     for(t = 60; t < 80; t++) {
-        temp = sha1_circular_shift(5,A) + (B ^ C ^ D) + E + W[t] + K[3];
+        temp = sha1_circular_lshift(5,A) + (B ^ C ^ D) + E + W[t] + K[3];
         E = D;
         D = C;
-        C = sha1_circular_shift(30,B);
+        C = sha1_circular_lshift(30,B);
         B = A;
         A = temp;
     }
@@ -98,12 +98,24 @@ void sha1_step(sha1_context *ctx)
 
 int sha1_update(sha1_context *ctx, uint8_t *input_buffer, size_t input_len)
 {
-  if (!input_len) { return success; }         // if length is zero
-  if (!ctx || !input_buffer) { return null; } // if context or buffer ptrs are null
-  if (ctx->computed) {                        // if computed flag set before done
+  if (!input_len) { return success; }             // if length is zero
+  if (!ctx || !input_buffer) { return null; }     // if context or buffer ptrs are null
+  if (ctx->computed) {                            // if computed flag set before done
     ctx->corrupted = state_error;
     return state_error;
   }
+  if (ctx->corrupted) { return ctx->corrupted; }  // if corrupted flag set
+
+  // process input buffer 64 bytes at a time
+  while (input_len-- && !ctx->corrupted) {
+
+  }
+
+  return success;
+}
+
+int sha1_finalize(sha1_context *ctx, uint8_t *input_buffer, size_t input_len)
+{
 
   return success;
 }
@@ -122,8 +134,14 @@ void sha1(FILE *stream, uint8_t *sha1_result)
   // read input 1024 bytes at a time
   uint8_t *input_buffer = malloc(1024);
   size_t input_size = 0;
-  while((input_size = fread(input_buffer, 1, 64, stream)) > 0){
-    sha1_update(&ctx, input_buffer, input_size);
+  while ((input_size = fread(input_buffer, 1, 1024, stream)) > 0) {
+    if (input_size == 1024) {
+      err = sha1_update(&ctx, input_buffer, input_size);
+      if (err) { fprintf(stderr, "sha1_update() error: %d\n", err); }
+    } else {
+      err = sha1_finalize(&ctx, input_buffer, input_size);
+      if (err) { fprintf(stderr, "sha1_finalize() error: %d\n", err); }
+    }
   }
 
   free(input_buffer);

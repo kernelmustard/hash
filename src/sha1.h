@@ -29,5 +29,5 @@ void sha1(FILE *stream, uint8_t *sha1_result);
 int sha1_init(sha1_context *ctx);
 void sha1_step(sha1_context *ctx);
 int sha1_update(sha1_context *ctx, uint8_t *input_buffer, size_t input_len);
-
+int sha1_finalize(sha1_context *ctx, uint8_t *input_buffer, size_t input_len);
 #endif
