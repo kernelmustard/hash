@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
         }
         break;
       case 's':
-        stream_len = sizeof(optarg);
+        stream_len = strlen(optarg) + 1;
         stream = tmpfile();
         if (stream == NULL) {
           perror("Unable to create tmpfile!\n");
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
         // fall through
       case 'o': {
         uint8_t sha1_result[20] = { 0 };
-        sha1(stream, &(sha1_result[0]));
+        sha1(stream, stream_len, &(sha1_result[0]));
         printf("SHA1\t");
         for (unsigned i = 0; i < 20; i++) { printf("%02x", sha1_result[i]); }
         printf("\n");

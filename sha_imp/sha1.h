@@ -2,6 +2,7 @@
 #define SHA1_H
 
 #include <stdint.h>
+#include <math.h>
 
 enum
 {
