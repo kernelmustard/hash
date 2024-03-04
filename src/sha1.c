@@ -24,74 +24,76 @@ int sha1_init(sha1_context *ctx)
 
 int sha1_step(sha1_context *ctx)
 {
-  const uint32_t K[] = {0x5a827999U,  /* Constants defined in SHA-1   */
-                        0x6ed9eba1U,
-                        0x8f1bbcdcU,
-                        0xca62c1d6U };
-    int t;                            /* Loop counter                */
-    uint32_t temp;                    /* Temporary word value        */
-    uint32_t W[80];                   /* Word sequence               */
-    uint32_t A, B, C, D, E;           /* Word buffers                */
+  K = malloc(sizeof(*K) * 4);
+  K[0] = 0x5a827999U;               // Constants defined in SHA-1
+  K[1] = 0x6ed9eba1U;
+  K[2] = 0x8f1bbcdcU;
+  K[3] = 0xca62c1d6U;
+  int t;                            // Loop counter
+  uint32_t temp;                    // Temporary word value
+  uint32_t W[80];                   // Word sequence
+  uint32_t E;                       // Word buffers 
 
-    for (t = 0; t < 16; t++) {
-      W[t]  = ctx->message_block[t * 4] << 24;
-      W[t] |= ctx->message_block[t * 4 + 1] << 16;
-      W[t] |= ctx->message_block[t * 4 + 2] << 8;
-      W[t] |= ctx->message_block[t * 4 + 3];
-    }
+  for (t = 0; t < 16; t++) {
+    W[t]  = ctx->message_block[t * 4] << 24;
+    W[t] |= ctx->message_block[t * 4 + 1] << 16;
+    W[t] |= ctx->message_block[t * 4 + 2] << 8;
+    W[t] |= ctx->message_block[t * 4 + 3];
+  }
 
-    for(t = 16; t < 80; t++) { W[t] = sha1_circular_lshift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]); }
+  for(t = 16; t < 80; t++) { W[t] = sha1_circular_lshift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]); }
 
-    A = ctx->intermediate_hash[0];
-    B = ctx->intermediate_hash[1];
-    C = ctx->intermediate_hash[2];
-    D = ctx->intermediate_hash[3];
-    E = ctx->intermediate_hash[4];
+  A = ctx->intermediate_hash[0];
+  B = ctx->intermediate_hash[1];
+  C = ctx->intermediate_hash[2];
+  D = ctx->intermediate_hash[3];
+  E = ctx->intermediate_hash[4];
 
-    for(t = 0; t < 20; t++) {
-      temp =  sha1_circular_lshift(5,A) + ((B & C) | ((~B) & D)) + E + W[t] + K[0];
-      E = D;
-      D = C;
-      C = sha1_circular_lshift(30,B);
-      B = A;
-      A = temp;
-    }
+  for(t = 0; t < 20; t++) {
+    temp =  sha1_circular_lshift(5,A) + ((B & C) | ((~B) & D)) + E + W[t] + K[0];
+    E = D;
+    D = C;
+    C = sha1_circular_lshift(30,B);
+    B = A;
+    A = temp;
+  }
 
-    for(t = 20; t < 40; t++) {
-      temp = sha1_circular_lshift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
-      E = D;
-      D = C;
-      C = sha1_circular_lshift(30,B);
-      B = A;
-      A = temp;
-    }
+  for(t = 20; t < 40; t++) {
+    temp = sha1_circular_lshift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
+    E = D;
+    D = C;
+    C = sha1_circular_lshift(30,B);
+    B = A;
+    A = temp;
+  }
 
-    for(t = 40; t < 60; t++) {
-      temp = sha1_circular_lshift(5,A) + ((B & C) | (B & D) | (C & D)) + E + W[t] + K[2];
-      E = D;
-      D = C;
-      C = sha1_circular_lshift(30,B);
-      B = A;
-      A = temp;
-    }
+  for(t = 40; t < 60; t++) {
+    temp = sha1_circular_lshift(5,A) + ((B & C) | (B & D) | (C & D)) + E + W[t] + K[2];
+    E = D;
+    D = C;
+    C = sha1_circular_lshift(30,B);
+    B = A;
+    A = temp;
+  }
 
-    for(t = 60; t < 80; t++) {
-      temp = sha1_circular_lshift(5,A) + (B ^ C ^ D) + E + W[t] + K[3];
-      E = D;
-      D = C;
-      C = sha1_circular_lshift(30,B);
-      B = A;
-      A = temp;
-    }
+  for(t = 60; t < 80; t++) {
+    temp = sha1_circular_lshift(5,A) + (B ^ C ^ D) + E + W[t] + K[3];
+    E = D;
+    D = C;
+    C = sha1_circular_lshift(30,B);
+    B = A;
+    A = temp;
+  }
 
-    ctx->intermediate_hash[0] += A;
-    ctx->intermediate_hash[1] += B;
-    ctx->intermediate_hash[2] += C;
-    ctx->intermediate_hash[3] += D;
-    ctx->intermediate_hash[4] += E;
+  ctx->intermediate_hash[0] += A;
+  ctx->intermediate_hash[1] += B;
+  ctx->intermediate_hash[2] += C;
+  ctx->intermediate_hash[3] += D;
+  ctx->intermediate_hash[4] += E;
 
-    ctx->message_block_index = 0;
+  ctx->message_block_index = 0;
 
+  free(K);
   return success;
 }
 

@@ -1,6 +1,6 @@
 .DEFAULT_GOAL: prod
 CC=gcc
-CC_OPTS=-std=c17 -pedantic -lm -Wall -Wextra -o
+CC_OPTS=-std=c17 -pedantic -lm -Wall -Wextra -Wshadow -o
 
 dev: src/main.c
 	$(CC) src/main.c -Og $(CC_OPTS) ./hash

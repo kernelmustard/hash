@@ -6,6 +6,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef SHARED_STATIC_VARS
+#define SHARED_STATIC_VARS
+static uint32_t A, B, C, D;
+static uint32_t *K;
+#endif
+static uint32_t S[64];
+static uint8_t PADDING[64];
+
 typedef struct {
   uint64_t size;      // Size of input in bytes
   uint32_t buffer[4]; // Current accumulation of hash

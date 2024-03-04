@@ -6,6 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef SHARED_STATIC_VARS
+#define SHARED_STATIC_VARS
+static uint32_t A, B, C, D; // digest buffers
+static uint32_t *K; // K table
+#endif
+
 enum sha1_return_code {
   success,
   null,            // Null pointer parameter
