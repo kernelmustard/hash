@@ -16,21 +16,21 @@ crc32: ./hash
 	./hash --file ./hash --crc32
 	crc32 ./hash
 	echo ""
-	./hash --string "./hash" --crc32
+	./hash --string "./hash" --crc32 
 	bash -c 'crc32 <(echo -n "./hash")'
 
 md5: ./hash
 	echo "\n\n"
-	./hash --file ./hash --md5
+	./hash --file ./hash --md5 
 	md5sum ./hash
 	echo ""
-	./hash --string "./hash" --md5
+	./hash --string "./hash" --md5 
 	bash -c 'md5sum <(echo -n "./hash")'
 
 sha1: ./hash
 	echo "\n\n"
-	./hash --file ./hash --sha1
+	./hash --file ./hash --sha1 
 	sha1sum ./hash
 	echo ""
-	./hash --string "./hash" --sha1
+	./hash --string "./hash" --sha1 
 	bash -c 'sha1sum <(echo -n "./hash")'

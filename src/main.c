@@ -3,13 +3,21 @@
 #include "md5.c"
 #include "sha1.c"
 
-static int verbose_flag = 0;
-static int all_algo_flag = 0;
 
-int main(int argc, char **argv) {
-  int gol_ret;
-  FILE *stream = NULL; // ptf to input message stream
-  uint64_t stream_len = 0; // stream length, 64 bits can hold the length of a 16 EiB file
+uint8_t arg_flags = 0;
+/* first
+ * 0 verbose  (0x01)
+ * 0 file     (0x02)
+ * 0 string   (0x04)
+ * 0 all      (0x08)
+ * 
+ * 0 crc32    (0x10)
+ * 0 md5      (0x20)
+ * 0 sha1     (0x40)
+ * 0 
+ */
+
+int main(int argc, char **argv) {  
 
   if (argc < 2) {
     printf("Not enough arguments!\n");
@@ -17,13 +25,17 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+  int gol_ret;
+  char *filename = NULL;
+  char *string = NULL;
+
   while (1) {
     static struct option long_options[] = {
-      {"verbose", no_argument,        &verbose_flag, 1}, // set verbosity flag
-      {"all",     no_argument,        &all_algo_flag, 1},
+      {"verbose", no_argument,        0, 'v'},
       {"help",    no_argument,        0, 'h'},
       {"file",    required_argument,  0, 'f'},
-      {"string",  required_argument,  0, 's'}, // TODO: CHECK IF FILE SET AND REJECT
+      {"string",  required_argument,  0, 's'},
+      {"all",     no_argument,        0, 'a'},
       {"crc32",   no_argument,        0, 'c'},
       {"md5",     no_argument,        0, 'm'},
       {"sha1",    no_argument,        0, 'o'},
@@ -31,7 +43,7 @@ int main(int argc, char **argv) {
     };
 
     int option_index = 0; // getopt_long stores the option index here
-    gol_ret = getopt_long(argc, argv, "vhf:s:acm", long_options, &option_index);
+    gol_ret = getopt_long(argc, argv, "vhf:s:acmo", long_options, &option_index);
 
     // Detect the end of the options
     if (gol_ret == -1) {
@@ -39,76 +51,55 @@ int main(int argc, char **argv) {
     }
 
     switch (gol_ret) {
-      case 1:
-        // If this option set a flag, do nothing else now.
-        break;
       case 'v': // support -v
-        verbose_flag = 1;
+        arg_flags |= 0x01;
+        printf("Verbose flag set!\n");
         break;
 
       case 'h':
+        if (arg_flags & 0x01) { printf("Printing help!\n"); }
         print_help();
         break;
 
       case 'f':
-        stream = fopen(optarg, "rb");
-
-        fseek(stream, 0, SEEK_END); // move fp to EOF, and ftell the num of bytes from beginning to fp
-        stream_len = ftell(stream);
-        fseek(stream, 0, SEEK_SET); // same as rewind(f)
-
-        if (stream_len >= pow(2, 32)) { // retrict size to ~4GiB
-          printf("[ERROR] File too large! The max size is %f.\n", pow(2, 32)); // possible to hash larger files with memory-mapping, but for now no large files
-          exit(-1);
+        if (arg_flags & 0x04) { 
+          perror("Unable to read file: string already set!\n"); 
+          break;
         }
+        if (arg_flags & 0x01) { printf("Reading file!\n"); }
+        arg_flags |= 0x02;
+        filename = malloc(strlen(optarg) + 1);
+        strcpy(filename, optarg);
         break;
-      case 's':
-        stream_len = strlen(optarg) + 1;
-        stream = tmpfile();
-        if (stream == NULL) {
-          perror("Unable to create tmpfile!\n");
-          exit(-1);
-        }
-        // crc32 showing error reading string from stdin, (md5 not having issues, no issue crc32ing a file either)
 
-        for (unsigned i = 0; optarg[i] != '\0'; i++) {
-          fputc(optarg[i], stream);
+      case 's':
+        if (arg_flags & 0x02) {
+          perror("Unable to read string: file already set!\n");
+          break;
         }
-        rewind(stream);
+        arg_flags |= 0x04;
+        string = malloc(strlen(optarg) + 1);  // does not validate length of user-controlled input string
+        strcpy(string, optarg);
         break;
 
       case 'a':
-        all_algo_flag = 1;
+        if (arg_flags & 0x01) 
+        arg_flags |= 0x08;
         // fall through
-      case 'c': {
-        uint32_t crc32_result = 0;
-        crc32(stream, stream_len, &crc32_result);
-        printf("CRC32\t%x\n", crc32_result);
-        if (!all_algo_flag) { // if not all algo's, break
-          if (stream != NULL) { fclose(stream); }
-          break;
+      case 'c':
+        arg_flags |= 0x10;
+        if (!(arg_flags & 0x08)) { 
+          if (arg_flags & 0x01) { printf("CRC32 flag set\n"); }
+          break; 
         }
-      }
+        printf("after argflag check\n");
         // fall through
-      case 'm': { 
-        uint8_t md5_result[16] = { 0 };
-        md5(stream, &(md5_result[0]));
-        printf("MD5\t");
-        for (unsigned i = 0; i < 16; i++) { printf("%02x", md5_result[i]); }
-        printf("\n");
-        if (!all_algo_flag) { // if not all algo's, break
-          if (stream != NULL) { fclose(stream); }
-          break;
-        }
-      }
+      case 'm':
+        arg_flags |= 0x20;
+        if (!(arg_flags & 0x08)) { break; }
         // fall through
       case 'o': {
-        uint8_t sha1_result[20] = { 0 };
-        sha1(stream, stream_len, &(sha1_result[0]));
-        printf("SHA1\t");
-        for (unsigned i = 0; i < 20; i++) { printf("%02x", sha1_result[i]); }
-        printf("\n");
-        if (stream != NULL) { fclose(stream); }
+        arg_flags |= 0x40;
         break;
       }
 
@@ -117,9 +108,66 @@ int main(int argc, char **argv) {
         break;
 
       default:
-        exit(-1);
+        return -1;
     }
   }
+
+  FILE *stream = NULL; // ptf to input message stream
+  uint64_t stream_len = 0; // stream length, 64 bits can hold the length of a 16 EiB file
+
+  if (arg_flags & 0x02) {
+    stream = fopen(filename, "rb");
+
+    fseek(stream, 0, SEEK_END); // move fp to EOF, and ftell the num of bytes from beginning to fp
+    stream_len = ftell(stream);
+    fseek(stream, 0, SEEK_SET); // same as rewind(f)
+
+    if (stream_len >= pow(2, 64)) { // retrict size to length held by uint64_t  ()
+      printf("[ERROR] File too large! The max size is %f.\n", pow(2, 64));
+       return -1;
+    }
+  } else if (arg_flags & 0x04) {
+    stream_len = strlen(string) + 1;
+    stream = tmpfile();
+    if (stream == NULL) {
+      perror("Unable to create tmpfile!\n");
+      return -1;
+    }
+
+    for (unsigned i = 0; string[i] != '\0'; i++) {
+      fputc(string[i], stream);
+    }
+    rewind(stream);
+  }
+
+  // CRC32
+  if (arg_flags & 0x10) {
+    uint32_t crc32_result = 0;
+    crc32(stream, stream_len, &crc32_result);
+    printf("CRC32\t%x\n", crc32_result);
+  }
+
+  // MD5
+  if (arg_flags & 0x20) {
+    uint8_t md5_result[16] = { 0 };
+    md5(stream, &(md5_result[0]));
+    printf("MD5\t");
+    for (unsigned i = 0; i < 16; i++) { printf("%02x", md5_result[i]); }
+    printf("\n");
+  }
+
+  // SHA1
+  if (arg_flags & 0x40) {
+    uint8_t sha1_result[20] = { 0 };
+    sha1(stream, stream_len, &(sha1_result[0]));
+    printf("SHA1\t");
+    for (unsigned i = 0; i < 20; i++) { printf("%02x", sha1_result[i]); }
+    printf("\n");
+  }
+
+  if (filename != NULL) { free(filename); }
+  if (string != NULL) { free(string); }
+  fclose(stream);
   return 0;
 }
 
