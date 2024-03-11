@@ -2,9 +2,9 @@
 
 #define sha1_circular_lshift(bits,word) (((word) << (bits)) | ((word) >> (32-(bits))))
 
-int sha1_init(sha1_context *ctx)
+void sha1_init(sha1_context *ctx)
 {
-  if (! ctx) { return null; }
+  if (! ctx) { return; }
 
   ctx->length_low = 0;
   ctx->length_high = 0;
@@ -16,23 +16,22 @@ int sha1_init(sha1_context *ctx)
   ctx->intermediate_hash[3] = 0x10325476U;
   ctx->intermediate_hash[4] = 0xc3d2e1f0U;
 
-  ctx->computed = 0;
-  ctx->corrupted = 0;
-
-  return success;
+  return;
 }
 
-int sha1_step(sha1_context *ctx)
+void sha1_step(sha1_context *ctx)
 {
-  K = malloc(sizeof(*K) * 4);
-  K[0] = 0x5a827999U;               // Constants defined in SHA-1
-  K[1] = 0x6ed9eba1U;
-  K[2] = 0x8f1bbcdcU;
-  K[3] = 0xca62c1d6U;
-  int t;                            // Loop counter
-  uint32_t temp;                    // Temporary word value
-  uint32_t W[80];                   // Word sequence
-  uint32_t E;                       // Word buffers 
+  uint32_t K_def[4] = {0x5a827999U,    /* Constants defined in SHA-1   */
+                      0x6ed9eba1U,
+                      0x8f1bbcdcU,
+                      0xca62c1d6U };
+  K = malloc(sizeof(K_def[0] * sizeof(uint32_t)));
+  for (unsigned i = 0; i < 4; i++) { K[i] = K_def[i]; }
+
+  int t;                            /* Loop counter                */
+  uint32_t temp;                    /* Temporary word value        */
+  uint32_t W[80];                   /* Word sequence               */
+  //uint32_t A, B, C, D, E;         /* Word buffers                */
 
   for (t = 0; t < 16; t++) {
     W[t]  = ctx->message_block[t * 4] << 24;
@@ -93,12 +92,11 @@ int sha1_step(sha1_context *ctx)
 
   ctx->message_block_index = 0;
 
-  free(K);
-  return success;
+  return;
 }
 
 // process input buffer 64 bytes at a time
-int sha1_update(sha1_context *ctx, uint8_t *input_buffer)
+void sha1_update(sha1_context *ctx, uint8_t *input_buffer)
 {
   unsigned input_index = 0;
   for (ctx->message_block_index = 0; ctx->message_block_index < 64; ctx->message_block_index++) {
@@ -107,11 +105,11 @@ int sha1_update(sha1_context *ctx, uint8_t *input_buffer)
   }
   if (ctx->message_block_index == 64) { sha1_step(ctx); }
   
-  return success;
+  return;
 }
 
 // add padding on final block before calculations
-int sha1_finalize(sha1_context *ctx, uint8_t *input_buffer, size_t input_len)
+void sha1_finalize(sha1_context *ctx, uint8_t *input_buffer, size_t input_len)
 {
   // add padding
   input_buffer[input_len] = 0x80U;
@@ -144,36 +142,31 @@ int sha1_finalize(sha1_context *ctx, uint8_t *input_buffer, size_t input_len)
   for (unsigned count = 0; count < 64; count++) { ctx->message_block[count] = 0; }
   ctx->length_low = 0;
   ctx->length_high = 0;
-  ctx->computed = 1;
 
-  return success;
+  return;
 }
 
 void sha1(FILE *stream, uint64_t stream_len, uint8_t *sha1_result)
 {
   sha1_context ctx;
-  int err;
+  sha1_init(&ctx);
 
   // set size
-  ctx.length_high = stream_len & 0xFFFFFFFF00000000ULL;
-  ctx.length_low = stream_len & 0x00000000FFFFFFFFULL;
-
-  err = sha1_init(&ctx);
-  if (err) {
-    fprintf(stderr, "sha1_reset() error: %d\n", err);
-    exit(1);
-  }
+  ctx.length_high = stream_len & 0xffffffff00000000ULL;
+  ctx.length_low = stream_len & 0x00000000ffffffffULL;
 
   // read input 64 bytes at a time
-  uint8_t *input_buffer = malloc(64);
+  uint8_t *input_buffer = malloc(64 * 2);
   size_t input_len = 0;
-    while ((input_len = fread(input_buffer, 1, 64, stream)) > 0) {
-      if (input_len == 64) {
-        err = sha1_update(&ctx, input_buffer);
-        if (err) { fprintf(stderr, "sha1_update() error: %d\n", err); }
-      } else {
-        err = sha1_finalize(&ctx, input_buffer, input_len);
-        if (err) { fprintf(stderr, "sha1_finalize() error: %d\n", err); }
+    while ((input_len = fread(input_buffer, 1, 64, stream)) > 0) 
+    {
+      if (input_len == 64) 
+      {
+        sha1_update(&ctx, input_buffer);
+      } 
+      else 
+      {
+        sha1_finalize(&ctx, input_buffer, input_len);
       }
     }
 

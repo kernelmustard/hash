@@ -29,7 +29,8 @@ int main(int argc, char **argv) {
   char *filename = NULL;
   char *string = NULL;
 
-  while (1) {
+  while (1) 
+  {
     static struct option long_options[] = {
       {"verbose", no_argument,        0, 'v'},
       {"help",    no_argument,        0, 'h'},
@@ -46,11 +47,10 @@ int main(int argc, char **argv) {
     gol_ret = getopt_long(argc, argv, "vhf:s:acmo", long_options, &option_index);
 
     // Detect the end of the options
-    if (gol_ret == -1) {
-      break;
-    }
+    if (gol_ret == -1) { break; }
 
-    switch (gol_ret) {
+    switch (gol_ret) 
+    {
       case 'v': // support -v
         arg_flags |= 0x01;
         printf("Verbose flag set!\n");
@@ -59,10 +59,11 @@ int main(int argc, char **argv) {
       case 'h':
         if (arg_flags & 0x01) { printf("Printing help!\n"); }
         print_help();
-        break;
+        return 0;
 
       case 'f':
-        if (arg_flags & 0x04) { 
+        if (arg_flags & 0x04) 
+        { 
           perror("Unable to read file: string already set!\n"); 
           break;
         }
@@ -73,7 +74,8 @@ int main(int argc, char **argv) {
         break;
 
       case 's':
-        if (arg_flags & 0x02) {
+        if (arg_flags & 0x02) 
+        {
           perror("Unable to read string: file already set!\n");
           break;
         }
@@ -83,16 +85,16 @@ int main(int argc, char **argv) {
         break;
 
       case 'a':
-        if (arg_flags & 0x01) 
+        if (arg_flags & 0x01) { printf("All hashing algorithms selected\n"); }
         arg_flags |= 0x08;
         // fall through
       case 'c':
         arg_flags |= 0x10;
-        if (!(arg_flags & 0x08)) { 
+        if (!(arg_flags & 0x08)) 
+        { 
           if (arg_flags & 0x01) { printf("CRC32 flag set\n"); }
           break; 
         }
-        printf("after argflag check\n");
         // fall through
       case 'm':
         arg_flags |= 0x20;
@@ -116,39 +118,51 @@ int main(int argc, char **argv) {
   uint64_t stream_len = 0; // stream length, 64 bits can hold the length of a 16 EiB file
 
   if (arg_flags & 0x02) {
+    if (arg_flags & 0x01) { printf("Reading file %s\n", filename); };
     stream = fopen(filename, "rb");
 
     fseek(stream, 0, SEEK_END); // move fp to EOF, and ftell the num of bytes from beginning to fp
     stream_len = ftell(stream);
     fseek(stream, 0, SEEK_SET); // same as rewind(f)
 
-    if (stream_len >= pow(2, 64)) { // retrict size to length held by uint64_t  ()
-      printf("[ERROR] File too large! The max size is %f.\n", pow(2, 64));
+    if (arg_flags & 0x01) { printf("File length is %ld\n", stream_len); }
+    if (stream_len >= pow(2, 64))   // retrict size to length held by uint64_t  (some amount of exabytes)
+    { 
+      fprintf(stderr, "File too large! The max size is %f.\n", pow(2, 64));
        return -1;
     }
-  } else if (arg_flags & 0x04) {
-    stream_len = strlen(string) + 1;
+  } 
+  else if (arg_flags & 0x04) 
+  {
+    stream_len = strlen(string);
     stream = tmpfile();
-    if (stream == NULL) {
+    if (stream == NULL) 
+    {
       perror("Unable to create tmpfile!\n");
       return -1;
     }
 
-    for (unsigned i = 0; string[i] != '\0'; i++) {
-      fputc(string[i], stream);
-    }
+    for (unsigned i = 0; string[i] != '\0'; i++) { fputc(string[i], stream); }
     rewind(stream);
+    free(string);
+  } 
+  else 
+  {
+    perror("You must either select a file or string to hash!\n");
+    return -1;
   }
 
   // CRC32
-  if (arg_flags & 0x10) {
+  if (arg_flags & 0x10) 
+  {
     uint32_t crc32_result = 0;
     crc32(stream, stream_len, &crc32_result);
     printf("CRC32\t%x\n", crc32_result);
   }
 
   // MD5
-  if (arg_flags & 0x20) {
+  if (arg_flags & 0x20) 
+  {
     uint8_t md5_result[16] = { 0 };
     md5(stream, &(md5_result[0]));
     printf("MD5\t");
@@ -166,12 +180,12 @@ int main(int argc, char **argv) {
   }
 
   if (filename != NULL) { free(filename); }
-  if (string != NULL) { free(string); }
   fclose(stream);
   return 0;
 }
 
-void print_help(void) {
+void print_help(void) 
+{
   printf("\n\
 ./hash [[--help|-h | [--verbose|-v]]] [[--file|-f] <file> | [--string|-s] \"string\" ] [[--all|-a] | [--crc32|-c] | [--md5|-m] | [--sha1|-o]]\n\
 --help      | -h\t\tPrint help message\n\

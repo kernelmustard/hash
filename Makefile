@@ -9,7 +9,11 @@ prod: src/main.c
 	$(CC) src/main.c -O3 $(CC_OPTS) ./hash
 	strip -s ./hash
 
-test: crc32 md5 sha1
+test: help crc32 md5 sha1
+
+help: ./hash
+	echo "\n\n"
+	./hash --help
 
 crc32: ./hash
 	echo "\n\n"

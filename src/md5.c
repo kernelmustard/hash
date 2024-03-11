@@ -8,10 +8,22 @@
  */
 
 // MD5 Algorithm compression functions
-#define F(X, Y, Z) ((X & Y) | (~X & Z))
-#define G(X, Y, Z) ((X & Z) | (Y & ~Z))
-#define H(X, Y, Z) (X ^ Y ^ Z)
-#define I(X, Y, Z) (Y ^ (X | ~Z))
+uint32_t F(uint32_t X, uint32_t Y, uint32_t Z)
+{
+  return ((X & Y) | (~X & Z));
+} 
+uint32_t G(uint32_t X, uint32_t Y, uint32_t Z)
+{
+  return ((X & Z) | (Y & ~Z));
+} 
+uint32_t H(uint32_t X, uint32_t Y, uint32_t Z)
+{
+  return (X ^ Y ^ Z);
+} 
+uint32_t I(uint32_t X, uint32_t Y, uint32_t Z)
+{
+  return (Y ^ (X | ~Z));
+}
 
 // rotate 32-bit word left by n bits
 uint32_t rotate_left(uint32_t word, uint32_t bits) 
@@ -19,19 +31,21 @@ uint32_t rotate_left(uint32_t word, uint32_t bits)
   return (word << bits) | (word >> (32 - bits));
 }
 
-void md5_step(uint32_t *buffer, uint32_t *input)
+void md5_step(md5_context *ctx, uint32_t *input)
 {
-  uint32_t AA = buffer[0];
-  uint32_t BB = buffer[1];
-  uint32_t CC = buffer[2];
-  uint32_t DD = buffer[3];
+  uint32_t AA = ctx->buffer[0];
+  uint32_t BB = ctx->buffer[1];
+  uint32_t CC = ctx->buffer[2];
+  uint32_t DD = ctx->buffer[3];
 
   uint32_t E;
 
   unsigned j;
 
-  for (unsigned int i = 0; i < 64; ++i) {
-    switch (i / 16) {
+  for (unsigned i = 0; i < 64; ++i) 
+  {
+    switch (i / 16) 
+    {
       case 0:
         E = F(BB, CC, DD);
         j = i;
@@ -53,14 +67,14 @@ void md5_step(uint32_t *buffer, uint32_t *input)
     uint32_t temp = DD;
     DD = CC;
     CC = BB;
-    BB = BB + rotate_left(AA + E + K[i] + input[j], S[i]);
+    BB = BB + rotate_left(AA + E + ctx->K[i] + input[j], ctx->S[i]);
     AA = temp;
   }
 
-  buffer[0] += AA;
-  buffer[1] += BB;
-  buffer[2] += CC;
-  buffer[3] += DD;
+  ctx->buffer[0] += AA;
+  ctx->buffer[1] += BB;
+  ctx->buffer[2] += CC;
+  ctx->buffer[3] += DD;
 
   return;
 }
@@ -81,7 +95,7 @@ void md5_update(md5_context *ctx, uint8_t *input_buffer, size_t input_len)
                    (uint32_t)(ctx->input[(j * 4) + 1]) <<  8 |
                    (uint32_t)(ctx->input[(j * 4)]);
       }
-      md5_step(ctx->buffer, input);
+      md5_step(ctx, input);
       offset = 0;
     }
   }
@@ -94,7 +108,7 @@ void md5_finalize(md5_context *ctx)
   unsigned int offset = ctx->size % 64;
   unsigned int padding_length = offset < 56 ? 56 - offset : (56 + 64) - offset;
 
-  md5_update(ctx, PADDING, padding_length);
+  md5_update(ctx, ctx->PADDING, padding_length);
   ctx->size -= (uint64_t)padding_length;
 
   for(unsigned int j = 0; j < 14; ++j){
@@ -106,7 +120,7 @@ void md5_finalize(md5_context *ctx)
   input[14] = (uint32_t)(ctx->size * 8);
   input[15] = (uint32_t)((ctx->size * 8) >> 32);
 
-  md5_step(ctx->buffer, input);
+  md5_step(ctx, input);
 
   for(unsigned int i = 0; i < 4; ++i){
     ctx->digest[(i * 4) + 0] = (uint8_t)((ctx->buffer[i] & 0x000000ff));
@@ -120,34 +134,20 @@ void md5_finalize(md5_context *ctx)
 // initialize context used to track buffers and digest
 void md5_init(md5_context *ctx)
 {
-  ctx->size = (uint64_t)0;
-
-  ctx->buffer[0] = (uint32_t)A;
-  ctx->buffer[1] = (uint32_t)B;
-  ctx->buffer[2] = (uint32_t)C;
-  ctx->buffer[3] = (uint32_t)D;
-
-  return;
-}
-
-void md5(FILE *stream, uint8_t *md5_result)
-{
+  ctx->size = 0;
 
   // MD5 Algorithm constants
-  A = 0x67452301;
-  B = 0xefcdab89;
-  C = 0x98badcfe;
-  D = 0x10325476;
+  ctx->buffer[0] = 0x67452301U; // A, B, C, D
+  ctx->buffer[1] = 0xefcdab89U;
+  ctx->buffer[2] = 0x98badcfeU;
+  ctx->buffer[3] = 0x10325476U;
 
   uint32_t list_S[64] = { 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
                           5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
                           4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
                           6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21  };
-  for (unsigned i = 0; i < 64; i++) {
-    S[i] = list_S[i];
-  }
+  for (unsigned i = 0; i < 64; i++) { ctx->S[i] = list_S[i]; }
 
-  K = malloc(sizeof(*K) * 64);
   uint32_t list_K[64] = { 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
                           0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
                           0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
@@ -164,9 +164,7 @@ void md5(FILE *stream, uint8_t *md5_result)
                           0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
                           0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
                           0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391  };
-  for (unsigned i = 0; i < 64; i++) {
-    K[i] = list_K[i];
-  }
+  for (unsigned i = 0; i < 64; i++) { ctx->K[i] = list_K[i]; }
 
   // Padding used to make the bit length of the input congruent to 448 % 512
   uint8_t list_PADDING[64] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -177,20 +175,23 @@ void md5(FILE *stream, uint8_t *md5_result)
                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  };
-  for (unsigned i = 0; i < 64; i++) {
-    PADDING[i] = list_PADDING[i];
-  }
+  for (unsigned i = 0; i < 64; i++) { ctx->PADDING[i] = list_PADDING[i]; }
 
+  return;
+}
+
+void md5(FILE *stream, uint8_t *md5_result)
+{
   md5_context ctx; // instantiate context struct
   md5_init(&ctx);
 
   uint8_t *input_buffer = malloc(1024);
   size_t input_size = 0;
 
-  while((input_size = fread(input_buffer, 1, 1024, stream)) > 0){
+  while ((input_size = fread(input_buffer, 1, 1024, stream)) > 0) 
+  {
     md5_update(&ctx, input_buffer, input_size);
   }
-
   md5_finalize(&ctx);
 
   free(input_buffer);
