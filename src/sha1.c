@@ -1,37 +1,17 @@
 #include "sha1.h"
 
-#define sha1_circular_lshift(bits,word) (((word) << (bits)) | ((word) >> (32-(bits))))
-
-void sha1_init(sha1_context *ctx)
+uint32_t sha1_circular_lshift(uint32_t bits, uint32_t word)
 {
-  if (! ctx) { return; }
-
-  ctx->length_low = 0;
-  ctx->length_high = 0;
-  ctx->message_block_index = 0;
-
-  ctx->intermediate_hash[0] = 0x67452301U;
-  ctx->intermediate_hash[1] = 0xefcdab89U;
-  ctx->intermediate_hash[2] = 0x98badcfeU;
-  ctx->intermediate_hash[3] = 0x10325476U;
-  ctx->intermediate_hash[4] = 0xc3d2e1f0U;
-
-  return;
+  return (((word) << (bits)) | ((word) >> (32-(bits))));
 }
 
 void sha1_step(sha1_context *ctx)
 {
-  uint32_t K_def[4] = {0x5a827999U,    /* Constants defined in SHA-1   */
-                      0x6ed9eba1U,
-                      0x8f1bbcdcU,
-                      0xca62c1d6U };
-  K = malloc(sizeof(K_def[0] * sizeof(uint32_t)));
-  for (unsigned i = 0; i < 4; i++) { K[i] = K_def[i]; }
 
   int t;                            /* Loop counter                */
   uint32_t temp;                    /* Temporary word value        */
   uint32_t W[80];                   /* Word sequence               */
-  //uint32_t A, B, C, D, E;         /* Word buffers                */
+  uint32_t A, B, C, D, E;           /* Word buffers                */
 
   for (t = 0; t < 16; t++) {
     W[t]  = ctx->message_block[t * 4] << 24;
@@ -42,69 +22,67 @@ void sha1_step(sha1_context *ctx)
 
   for(t = 16; t < 80; t++) { W[t] = sha1_circular_lshift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]); }
 
-  A = ctx->intermediate_hash[0];
-  B = ctx->intermediate_hash[1];
-  C = ctx->intermediate_hash[2];
-  D = ctx->intermediate_hash[3];
-  E = ctx->intermediate_hash[4];
+  typedef union
+    {
+        unsigned char c[64];
+        uint32_t l[16];
+    } CHAR64LONG16;
+  CHAR64LlockONG16 block[1];     // use array to appear as a pointer
+  memcpy(b, buffer, 64);
 
-  for(t = 0; t < 20; t++) {
-    temp =  sha1_circular_lshift(5,A) + ((B & C) | ((~B) & D)) + E + W[t] + K[0];
-    E = D;
-    D = C;
-    C = sha1_circular_lshift(30,B);
-    B = A;
-    A = temp;
-  }
+  A = ctx->digest[0];
+  B = ctx->digest[1];
+  C = ctx->digest[2];
+  D = ctx->digest[3];
+  E = ctx->digest[4];
 
-  for(t = 20; t < 40; t++) {
-    temp = sha1_circular_lshift(5,A) + (B ^ C ^ D) + E + W[t] + K[1];
-    E = D;
-    D = C;
-    C = sha1_circular_lshift(30,B);
-    B = A;
-    A = temp;
-  }
+  // 4 rounds of 20 operations each
+  for (unsigned i = 0; i < 80; i++) {
+        if (i <= 15)
+        { 
+          R0(A, B, C, D, E, i); 
+          E += ((B & (C ^ D)) ^ D) + blk0(i) + ctx->K[0] + sha1_circular_lshift(A,5);
+          B = sha1_circular_lshift(B,30);
+        }
+        else if (i <= 19)
+        {
+          R1(e, a, b, c, d, i); 
+        }
+        else if (i <= 39)
+        { 
+          R2(a, b, c, d, e, i); 
+        }
+        else if (i <= 59)
+        {
+          R3(a, b, c, d, e, i); 
+        }
+        else if (i <= 79)
+        {
+          R4(a, b, c, d, e, i); 
+        }
+    }
+    // blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) | (rol(block->l[i],8) & 0x00ff00ff))
+    // blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15]^block->l[(i+2)&15]^block->l[i&15],1))
 
-  for(t = 40; t < 60; t++) {
-    temp = sha1_circular_lshift(5,A) + ((B & C) | (B & D) | (C & D)) + E + W[t] + K[2];
-    E = D;
-    D = C;
-    C = sha1_circular_lshift(30,B);
-    B = A;
-    A = temp;
-  }
+    /*
 
-  for(t = 60; t < 80; t++) {
-    temp = sha1_circular_lshift(5,A) + (B ^ C ^ D) + E + W[t] + K[3];
-    E = D;
-    D = C;
-    C = sha1_circular_lshift(30,B);
-    B = A;
-    A = temp;
-  }
+    R0(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
+    R1(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk(i)+0x5A827999+rol(v,5);w=rol(w,30);
+    R2(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
+    R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
+    R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
+    */
 
-  ctx->intermediate_hash[0] += A;
-  ctx->intermediate_hash[1] += B;
-  ctx->intermediate_hash[2] += C;
-  ctx->intermediate_hash[3] += D;
-  ctx->intermediate_hash[4] += E;
+  ctx->digest[0] += A;
+  ctx->digest[1] += B;
+  ctx->digest[2] += C;
+  ctx->digest[3] += D;
+  ctx->digest[4] += E;
 
+  // clear variables
+  A = B = C = D = E = 0;
   ctx->message_block_index = 0;
 
-  return;
-}
-
-// process input buffer 64 bytes at a time
-void sha1_update(sha1_context *ctx, uint8_t *input_buffer)
-{
-  unsigned input_index = 0;
-  for (ctx->message_block_index = 0; ctx->message_block_index < 64; ctx->message_block_index++) {
-    ctx->message_block[ctx->message_block_index] = input_buffer[input_index];
-    input_index++;
-  }
-  if (ctx->message_block_index == 64) { sha1_step(ctx); }
-  
   return;
 }
 
@@ -146,14 +124,45 @@ void sha1_finalize(sha1_context *ctx, uint8_t *input_buffer, size_t input_len)
   return;
 }
 
-void sha1(FILE *stream, uint64_t stream_len, uint8_t *sha1_result)
+// process input buffer 64 bytes at a time
+void sha1_update(sha1_context *ctx, uint8_t *input_buffer)
+{
+  unsigned input_index = 0;
+  for (ctx->message_block_index = 0; ctx->message_block_index < 64; ctx->message_block_index++) {
+    ctx->message_block[ctx->message_block_index] = input_buffer[input_index];
+    input_index++;
+  }
+  if (ctx->message_block_index == 64) { sha1_step(ctx); }
+  
+  return;
+}
+
+void sha1_init(sha1_context *ctx)
+{
+  if (! ctx) { return; }
+
+  ctx->length_low = 0;
+  ctx->length_high = 0;
+  ctx->message_block_index = 0;
+
+  ctx->digest[0] = 0x67452301U;  // Constants defined in SHA-1
+  ctx->digest[1] = 0xefcdab89U;
+  ctx->digest[2] = 0x98badcfeU;
+  ctx->digest[3] = 0x10325476U;
+  ctx->digest[4] = 0xc3d2e1f0U;
+
+  ctx->K[0] = 0x5a827999U;
+  ctx->K[1] = 0x6ed9eba1U;
+  ctx->K[2] = 0x8f1bbcdcU;
+  ctx->K[3] = 0xca62c1d6U;
+
+  return;
+}
+
+void sha1(FILE *stream, uint8_t *sha1_result)
 {
   sha1_context ctx;
   sha1_init(&ctx);
-
-  // set size
-  ctx.length_high = stream_len & 0xffffffff00000000ULL;
-  ctx.length_low = stream_len & 0x00000000ffffffffULL;
 
   // read input 64 bytes at a time
   uint8_t *input_buffer = malloc(64 * 2);
@@ -172,6 +181,6 @@ void sha1(FILE *stream, uint64_t stream_len, uint8_t *sha1_result)
 
   free(input_buffer);
 
-  memcpy(sha1_result, ctx.intermediate_hash, 20);
+  memcpy(sha1_result, ctx.digest, 20);
   return;
 }

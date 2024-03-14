@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
   // SHA1
   if (arg_flags & 0x40) {
     uint8_t sha1_result[20] = { 0 };
-    sha1(stream, stream_len, &(sha1_result[0]));
+    sha1(stream, &(sha1_result[0]));
     printf("SHA1\t");
     for (unsigned i = 0; i < 20; i++) { printf("%02x", sha1_result[i]); }
     printf("\n");
