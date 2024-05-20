@@ -5,7 +5,7 @@ void crc32(FILE *stream, uint64_t stream_len, uint32_t *crc32_result)
   // parse stream
   uint8_t *message = malloc(stream_len);
   size_t ret = fread(message, 1, stream_len, stream);
-  if (ret <= 0) {}  // do nothing
+  if (ret <= 0) {}  // do nothing to quiet error message
 
   // Table of CRCs of all 8-bit messages.
   uint32_t crc_table[256];

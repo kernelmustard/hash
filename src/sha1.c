@@ -1,15 +1,10 @@
 #include "sha1.h"
 
-uint32_t sha1_circular_lshift(uint32_t bits, uint32_t word)
-{
-  return (((word) << (bits)) | ((word) >> (32-(bits))));
-}
-
 void sha1_step(sha1_context *ctx)
 {
 
   int t;                            /* Loop counter                */
-  uint32_t temp;                    /* Temporary word value        */
+  //uint32_t temp;                    /* Temporary word value        */
   uint32_t W[80];                   /* Word sequence               */
   uint32_t A, B, C, D, E;           /* Word buffers                */
 
@@ -23,12 +18,12 @@ void sha1_step(sha1_context *ctx)
   for(t = 16; t < 80; t++) { W[t] = sha1_circular_lshift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]); }
 
   typedef union
-    {
-        unsigned char c[64];
-        uint32_t l[16];
-    } CHAR64LONG16;
-  CHAR64LlockONG16 block[1];     // use array to appear as a pointer
-  memcpy(b, buffer, 64);
+  {
+    unsigned char c[64];
+    uint32_t l[16];
+  } CHAR64LONG16;
+  CHAR64LONG16 block[1];     // use array to appear as a pointer
+  memcpy(block, ctx->message_block, 64);
 
   A = ctx->digest[0];
   B = ctx->digest[1];
@@ -36,42 +31,41 @@ void sha1_step(sha1_context *ctx)
   D = ctx->digest[3];
   E = ctx->digest[4];
 
+  #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
+
+  #define blk0(i) (block->l[i] = (rol(block->l[i], 24) & 0xFF00FF00) | (rol(block->l[i], 8) & 0x00ff00ff))
+  #define blk(i) (block->l[i & 15] = rol(block->l[(i + 13) & 15] ^ block->l[(i + 8) & 15] ^ block->l[(i + 2) & 15] ^ block->l[i & 15], 1))
+
+  #define R0(v,w,x,y,z,i) z += ((w&(x^y))^y)+blk0(i)+0x5A827999+rol(v,5);w=rol(w,30)
+  #define R1(v,w,x,y,z,i) z += ((w&(x^y))^y)+blk(i)+0x5A827999+rol(v,5);w=rol(w,30)
+  #define R2(v,w,x,y,z,i) z += (w^x^y)+blk(i)+0x6ED9EBA1+rol(v,5);w=rol(w,30)
+  #define R3(v,w,x,y,z,i) z += (((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30)
+  #define R4(v,w,x,y,z,i) z += (w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30)
+
   // 4 rounds of 20 operations each
-  for (unsigned i = 0; i < 80; i++) {
-        if (i <= 15)
-        { 
-          R0(A, B, C, D, E, i); 
-          E += ((B & (C ^ D)) ^ D) + blk0(i) + ctx->K[0] + sha1_circular_lshift(A,5);
-          B = sha1_circular_lshift(B,30);
-        }
-        else if (i <= 19)
-        {
-          R1(e, a, b, c, d, i); 
-        }
-        else if (i <= 39)
-        { 
-          R2(a, b, c, d, e, i); 
-        }
-        else if (i <= 59)
-        {
-          R3(a, b, c, d, e, i); 
-        }
-        else if (i <= 79)
-        {
-          R4(a, b, c, d, e, i); 
-        }
+  for (unsigned i = 0; i < 80; i++) 
+  {
+    if (i <= 15)
+    {
+      R0(A, B, C, D, E, i); 
     }
-    // blk0(i) (block->l[i] = (rol(block->l[i],24)&0xFF00FF00) | (rol(block->l[i],8) & 0x00ff00ff))
-    // blk(i) (block->l[i&15] = rol(block->l[(i+13)&15]^block->l[(i+8)&15]^block->l[(i+2)&15]^block->l[i&15],1))
-
-    /*
-
-    R0(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk0(i)+0x5A827999+rol(v,5);w=rol(w,30);
-    R1(v,w,x,y,z,i) z+=((w&(x^y))^y)+blk(i)+0x5A827999+rol(v,5);w=rol(w,30);
-    R2(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0x6ED9EBA1+rol(v,5);w=rol(w,30);
-    R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+blk(i)+0x8F1BBCDC+rol(v,5);w=rol(w,30);
-    R4(v,w,x,y,z,i) z+=(w^x^y)+blk(i)+0xCA62C1D6+rol(v,5);w=rol(w,30);
-    */
+    else if (i <= 19)
+    {
+      R1(A, B, C, D, E, i);
+    }
+    else if (i <= 39)
+    {
+      R2(A, B, C, D, E, i);
+    }
+    else if (i <= 59)
+    {
+      R3(A, B, C, D, E, i);
+    }
+    else if (i <= 79)
+    {
+      R4(A, B, C, D, E, i);
+    }
+  }
 
   ctx->digest[0] += A;
   ctx->digest[1] += B;
@@ -128,7 +122,7 @@ void sha1_finalize(sha1_context *ctx, uint8_t *input_buffer, size_t input_len)
 void sha1_update(sha1_context *ctx, uint8_t *input_buffer)
 {
   unsigned input_index = 0;
-  for (ctx->message_block_index = 0; ctx->message_block_index < 64; ctx->message_block_index++) {
+  for (ctx->message_block_index = 0; ctx->message_block_index < 64; ctx->message_block_index += 1) {
     ctx->message_block[ctx->message_block_index] = input_buffer[input_index];
     input_index++;
   }
