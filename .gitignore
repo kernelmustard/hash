@@ -1,2 +1,5 @@
-# Ignore generated binary
+# generated binary
 hash
+
+# notes temp file
+.~lock.hash_notes.odt#

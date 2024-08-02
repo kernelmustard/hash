@@ -3,10 +3,10 @@ CC=gcc
 CC_OPTS=-Wall -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
 
 dev: src/main.c
-	$(CC) src/main.c -Og $(CC_OPTS) ./hash
+	$(CC) src/main.c -Og $(CC_OPTS) -o ./hash
 
 prod: src/main.c
-	$(CC) src/main.c -O3 $(CC_OPTS) ./hash
+	$(CC) src/main.c -O3 $(CC_OPTS) -o ./hash
 	strip -s ./hash
 
 test: help crc32 md5 sha1

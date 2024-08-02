@@ -13,7 +13,7 @@ uint8_t arg_flags = 0;
  * 
  * 0 crc32    (0x10)
  * 0 md5      (0x20)
- * 0 sha1     (0x40)
+ * 0 
  * 0 
  */
 
@@ -39,12 +39,11 @@ int main(int argc, char **argv) {
       {"all",     no_argument,        0, 'a'},
       {"crc32",   no_argument,        0, 'c'},
       {"md5",     no_argument,        0, 'm'},
-      {"sha1",    no_argument,        0, 'o'},
       {0, 0, 0, 0} // "The last element of the array has to be filled with zeros."
     };
 
     int option_index = 0; // getopt_long stores the option index here
-    gol_ret = getopt_long(argc, argv, "vhf:s:acmo", long_options, &option_index);
+    gol_ret = getopt_long(argc, argv, "vhf:s:acm", long_options, &option_index);
 
     // Detect the end of the options
     if (gol_ret == -1) { break; }
@@ -81,7 +80,7 @@ int main(int argc, char **argv) {
         }
         arg_flags |= 0x04;
         string = malloc(strlen(optarg) + 1);  // does not validate length of user-controlled input string
-        strcpy(string, optarg);
+        strcpy(string, optarg);               // merely allows user to shoot their own dick off
         break;
 
       case 'a':
@@ -99,11 +98,7 @@ int main(int argc, char **argv) {
       case 'm':
         arg_flags |= 0x20;
         if (!(arg_flags & 0x08)) { break; }
-        // fall through
-      case 'o': {
-        arg_flags |= 0x40;
-        break;
-      }
+        // fall through  
 
       case '?':
         // getopt_long already printed an error message.
@@ -114,7 +109,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  FILE *stream = NULL; // ptf to input message stream
+  FILE *stream = NULL; // ptr to input message stream
   uint64_t stream_len = 0; // stream length, 64 bits can hold the length of a 16 EiB file
 
   if (arg_flags & 0x02) {
@@ -167,15 +162,6 @@ int main(int argc, char **argv) {
     md5(stream, &(md5_result[0]));
     printf("MD5\t");
     for (unsigned i = 0; i < 16; i++) { printf("%02x", md5_result[i]); }
-    printf("\n");
-  }
-
-  // SHA1
-  if (arg_flags & 0x40) {
-    uint8_t sha1_result[20] = { 0 };
-    sha1(stream, &(sha1_result[0]));
-    printf("SHA1\t");
-    for (unsigned i = 0; i < 20; i++) { printf("%02x", sha1_result[i]); }
     printf("\n");
   }
 
