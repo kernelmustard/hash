@@ -1,7 +1,6 @@
 #include "main.h"
 #include "crc.c"
 #include "md5.c"
-#include "sha1.c"
 
 
 uint8_t arg_flags = 0;
@@ -115,6 +114,7 @@ int main(int argc, char **argv) {
   if (arg_flags & 0x02) {
     if (arg_flags & 0x01) { printf("Reading file %s\n", filename); };
     stream = fopen(filename, "rb");
+
 
     fseek(stream, 0, SEEK_END); // move fp to EOF, and ftell the num of bytes from beginning to fp
     stream_len = ftell(stream);

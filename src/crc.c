@@ -1,10 +1,16 @@
 #include "crc.h"
 
+/*
+ * Reworked version of W3C's algo published in their PNG specification (https://www.w3.org/TR/png/#D-CRCAppendix)
+ * super thanks to all the folks that worked on it
+ */
+
 void crc32(FILE *stream, uint64_t stream_len, uint32_t *crc32_result) 
 {
   // parse stream
   uint8_t *message = malloc(stream_len);
   size_t ret = fread(message, 1, stream_len, stream);
+  rewind(stream); // set fp to beginning of stream *** DO ON ALL ALGO FUNCTIONS ***
   if (ret <= 0) {}  // do nothing to quiet error message
 
   // Table of CRCs of all 8-bit messages.
