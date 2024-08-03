@@ -1,6 +1,7 @@
 #include "main.h"
 #include "crc.c"
 #include "md5.c"
+#include "sha1.c"
 
 
 uint8_t arg_flags = 0;
@@ -12,7 +13,7 @@ uint8_t arg_flags = 0;
  * 
  * 0 crc32    (0x10)
  * 0 md5      (0x20)
- * 0 
+ * 0 sha1     (0x40)
  * 0 
  */
 
@@ -24,7 +25,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  int gol_ret;
+  int gol_ret = 0;
   char *filename = NULL;
   char *string = NULL;
 
@@ -38,6 +39,7 @@ int main(int argc, char **argv) {
       {"all",     no_argument,        0, 'a'},
       {"crc32",   no_argument,        0, 'c'},
       {"md5",     no_argument,        0, 'm'},
+      {"sha1",    no_argument,        0, 'o'},
       {0, 0, 0, 0} // "The last element of the array has to be filled with zeros."
     };
 
@@ -88,16 +90,19 @@ int main(int argc, char **argv) {
         // fall through
       case 'c':
         arg_flags |= 0x10;
-        if (!(arg_flags & 0x08)) 
-        { 
-          if (arg_flags & 0x01) { printf("CRC32 flag set\n"); }
-          break; 
-        }
+        if (arg_flags & 0x01) { printf("CRC32 flag set\n"); }
+        if (!(arg_flags & 0x08)) { break; }
         // fall through
       case 'm':
         arg_flags |= 0x20;
+        if (arg_flags & 0x01) { printf("MD5 flag set\n"); }
         if (!(arg_flags & 0x08)) { break; }
         // fall through  
+      case 'o':
+        arg_flags |= 0x40;
+        if (arg_flags & 0x01) { printf("SHA1 flag set\n"); }
+        if (!(arg_flags & 0x08)) { break; }
+        // fall through
 
       case '?':
         // getopt_long already printed an error message.
@@ -162,6 +167,16 @@ int main(int argc, char **argv) {
     md5(stream, &(md5_result[0]));
     printf("MD5\t");
     for (unsigned i = 0; i < 16; i++) { printf("%02x", md5_result[i]); }
+    printf("\n");
+  }
+
+  // SHA1
+  if (arg_flags & 0x40)
+  {
+    uint8_t sha1_result[20] = { 0 };
+    sha1(stream, stream_len, &(sha1_result[0]));
+    printf("SHA1\t");
+    for (unsigned i = 0; i < 20; i++) { printf("%02x", sha1_result[i]); }
     printf("\n");
   }
 

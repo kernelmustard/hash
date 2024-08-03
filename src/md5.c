@@ -194,10 +194,11 @@ void md5(FILE *stream, uint8_t *md5_result)
   }
   md5_finalize(&ctx);
 
+  // clean up
   rewind(stream);
-
   free(input_buffer);
   
+  // pass result to main
   memcpy(md5_result, ctx.digest, 16);
   return;
 }
