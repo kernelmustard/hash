@@ -22,16 +22,16 @@ typedef union
 uint32_t rol(uint32_t value, unsigned bits);
 uint32_t blk0(unsigned i, CHAR64LONG16 **block);
 uint32_t blk(unsigned i, CHAR64LONG16 **block);
-void R0(uint32_t v, uint32_t w, uint32_t x, uint32_t y, uint32_t z, unsigned i, CHAR64LONG16 *block);
-void R1(uint32_t v, uint32_t w, uint32_t x, uint32_t y, uint32_t z, unsigned i, CHAR64LONG16 *block);
-void R2(uint32_t v, uint32_t w, uint32_t x, uint32_t y, uint32_t z, unsigned i, CHAR64LONG16 *block);
-void R3(uint32_t v, uint32_t w, uint32_t x, uint32_t y, uint32_t z, unsigned i, CHAR64LONG16 *block);
-void R4(uint32_t v, uint32_t w, uint32_t x, uint32_t y, uint32_t z, unsigned i, CHAR64LONG16 *block);
+void R0(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block);
+void R1(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block);
+void R2(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block);
+void R3(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block);
+void R4(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block);
 
 void sha1(FILE *stream, uint64_t stream_len, uint8_t *sha1_result);
 void sha1_init(sha1_ctx *ctx);
-void sha1_step(sha1_ctx *ctx);
-void sha1_update(sha1_ctx *ctx, uint8_t *input_buffer, unsigned input_length);
+void sha1_step(sha1_ctx *ctx, const unsigned char buffer[64]);
+void sha1_update(sha1_ctx *ctx, const unsigned char *input_buffer, unsigned input_length);
 void sha1_finalize(sha1_ctx *ctx);
 
 #endif
