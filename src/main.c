@@ -1,7 +1,7 @@
 #include "main.h"
-#include "crc.c"
-#include "md5.c"
-#include "sha1.c"
+#include "crc/crc.h"
+#include "md5/md5.c"
+#include "sha1/sha1.c"
 
 
 uint8_t arg_flags = 0;
