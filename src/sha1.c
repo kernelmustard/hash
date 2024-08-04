@@ -5,60 +5,24 @@
  */
 
 // define transformative functions
+#define sha1_rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
 
-uint32_t rol(uint32_t value, unsigned bits)
-{
-  return (value << bits) | (value >> (32 - bits));
-}
-
+// sha1_blk0() and sha1_blk() perform the initial expand.
+// I got the idea of expanding during the round function from SSLeay
 #if BYTE_ORDER == LITTLE_ENDIAN
-uint32_t blk0(unsigned i, CHAR64LONG16 **block)
-{
-  return (rol((*block)->l[i],24)&0xFF00FF00) | (rol((*block)->l[i], 8) & 0x00FF00FFU);
-}
+#define sha1_blk0(i) (block->l[i] = (sha1_rol(block->l[i],24)&0xFF00FF00) | (sha1_rol(block->l[i],8)&0x00FF00FF))
 #elif BYTE_ORDER == BIG_ENDIAN
-uint32_t blk0(unsigned i, CHAR64LONG16 **block)
-{
-  return (*block)->l[i];
-}
+#define sha1_blk0(i) block->l[i]
 #else
-#error "Endianness is not defined!"
+#error "Endianness not defined!"
 #endif
+#define sha1_blk(i) (block->l[i&15] = sha1_rol(block->l[(i+13)&15]^block->l[(i+8)&15]^block->l[(i+2)&15]^block->l[i&15],1))
 
-uint32_t blk(unsigned i, CHAR64LONG16 **block)
-{
-  return (*block)->l[i&15] = rol((*block)->l[(i+13)&15] ^ (*block)->l[(i+8)&15] ^ (*block)->l[(i+2)&15] ^ (*block)->l[i&15], 1);
-}
-
-void R0(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block)
-{
-  *z += ((*w & (x ^ y)) ^ y) + blk0(i, &block) + 0x5A827999U + rol(v, 5);
-  *w = rol(*w, 30);
-}
-
-void R1(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block)
-{
-  *z += ((*w & (x ^ y)) ^ y) + blk(i, &block) + 0x5A827999U + rol(v, 5);
-  *w = rol(*w, 30);
-}
-
-void R2(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block)
-{
-  *z += (*w ^ x ^ y) + blk(i, &block) + 0x6ED9EBA1U + rol(v, 5);
-  *w = rol(*w, 30);
-}
-
-void R3(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block)
-{
-  *z += (((*w | x) & y) | (*w & x)) + blk(i, &block) + 0x8F1BBCDCU + rol(v, 5);
-  *w = rol(*w, 30);
-}
-
-void R4(uint32_t v, uint32_t *w, uint32_t x, uint32_t y, uint32_t *z, unsigned i, CHAR64LONG16 *block)
-{
-  *z += (*w ^ x ^ y) + blk(i, &block) + 0xCA62C1D6U + rol(v, 5);
-  *w = rol(*w, 30);
-}
+#define SHA1_R0(v,w,x,y,z,i) z+=((w&(x^y))^y)+sha1_blk0(i)+0x5A827999+sha1_rol(v,5);w=sha1_rol(w,30);
+#define SHA1_R1(v,w,x,y,z,i) z+=((w&(x^y))^y)+sha1_blk(i)+0x5A827999+sha1_rol(v,5);w=sha1_rol(w,30);
+#define SHA1_R2(v,w,x,y,z,i) z+=(w^x^y)+sha1_blk(i)+0x6ED9EBA1+sha1_rol(v,5);w=sha1_rol(w,30);
+#define SHA1_R3(v,w,x,y,z,i) z+=(((w|x)&y)|(w&x))+sha1_blk(i)+0x8F1BBCDC+sha1_rol(v,5);w=sha1_rol(w,30);
+#define SHA1_R4(v,w,x,y,z,i) z+=(w^x^y)+sha1_blk(i)+0xCA62C1D6+sha1_rol(v,5);w=sha1_rol(w,30);
 
 void sha1_init(sha1_ctx *ctx)
 {
@@ -85,47 +49,47 @@ void sha1_step(sha1_ctx *ctx, const unsigned char buffer[64])
   d = ctx->state[3];
   e = ctx->state[4];
 
-  // 4 rounds of 20 operations (R0+R1)
+  // 4 rounds of 20 operations (R0+R1 are sameish)
   for (unsigned i = 0; i <= 79; i++)
   {
     if (i <= 15)
     {
-      if      ((i+5) % 5 == 0) { R0(a, &b, c, d, &e, i, &(block[0])); } 
-      else if ((i+5) % 5 == 1) { R0(e, &a, b, c, &d, i, &(block[0])); }
-      else if ((i+5) % 5 == 2) { R0(d, &e, a, b, &c, i, &(block[0])); }
-      else if ((i+5) % 5 == 3) { R0(c, &d, e, a, &b, i, &(block[0])); }
-      else if ((i+5) % 5 == 4) { R0(b, &c, d, e, &a, i, &(block[0])); }
+      if      ((i+5) % 5 == 0) { SHA1_R0(a, b, c, d, e, i); } 
+      else if ((i+5) % 5 == 1) { SHA1_R0(e, a, b, c, d, i); }
+      else if ((i+5) % 5 == 2) { SHA1_R0(d, e, a, b, c, i); }
+      else if ((i+5) % 5 == 3) { SHA1_R0(c, d, e, a, b, i); }
+      else if ((i+5) % 5 == 4) { SHA1_R0(b, c, d, e, a, i); }
     }
     else if (i <= 19)
     {
-      if      (i % 5 == 1) { R1(e, &a, b, c, &d, i, &(block[0])); }
-      else if (i % 5 == 2) { R1(d, &e, a, b, &c, i, &(block[0])); }
-      else if (i % 5 == 3) { R1(c, &d, e, a, &b, i, &(block[0])); }
-      else if (i % 5 == 4) { R1(b, &c, d, e, &a, i, &(block[0])); }
+      if      (i % 5 == 1) { SHA1_R1(e, a, b, c, d, i); }
+      else if (i % 5 == 2) { SHA1_R1(d, e, a, b, c, i); }
+      else if (i % 5 == 3) { SHA1_R1(c, d, e, a, b, i); }
+      else if (i % 5 == 4) { SHA1_R1(b, c, d, e, a, i); }
     }
     else if (i <= 39)
     {
-      if      (i % 5 == 0) { R2(a, &b, c, d, &e, i, &(block[0])); }
-      else if (i % 5 == 1) { R2(e, &a, b, c, &d, i, &(block[0])); }
-      else if (i % 5 == 2) { R2(d, &e, a, b, &c, i, &(block[0])); }
-      else if (i % 5 == 3) { R2(c, &d, e, a, &b, i, &(block[0])); }
-      else if (i % 5 == 4) { R2(b, &c, d, e, &a, i, &(block[0])); }
+      if      (i % 5 == 0) { SHA1_R2(a, b, c, d, e, i); }
+      else if (i % 5 == 1) { SHA1_R2(e, a, b, c, d, i); }
+      else if (i % 5 == 2) { SHA1_R2(d, e, a, b, c, i); }
+      else if (i % 5 == 3) { SHA1_R2(c, d, e, a, b, i); }
+      else if (i % 5 == 4) { SHA1_R2(b, c, d, e, a, i); }
     }
     else if (i <= 59)
     {
-      if      (i % 5 == 0) { R3(a, &b, c, d, &e, i, &(block[0])); }
-      else if (i % 5 == 1) { R3(e, &a, b, c, &d, i, &(block[0])); }
-      else if (i % 5 == 2) { R3(d, &e, a, b, &c, i, &(block[0])); }
-      else if (i % 5 == 3) { R3(c, &d, e, a, &b, i, &(block[0])); }
-      else if (i % 5 == 4) { R3(b, &c, d, e, &a, i, &(block[0])); }
+      if      (i % 5 == 0) { SHA1_R3(a, b, c, d, e, i); }
+      else if (i % 5 == 1) { SHA1_R3(e, a, b, c, d, i); }
+      else if (i % 5 == 2) { SHA1_R3(d, e, a, b, c, i); }
+      else if (i % 5 == 3) { SHA1_R3(c, d, e, a, b, i); }
+      else if (i % 5 == 4) { SHA1_R3(b, c, d, e, a, i); }
     }
     else if (i <= 79)
     {
-      if      (i % 5 == 0) { R4(a, &b, c, d, &e, i, &(block[0])); }
-      else if (i % 5 == 1) { R4(e, &a, b, c, &d, i, &(block[0])); }
-      else if (i % 5 == 2) { R4(d, &e, a, b, &c, i, &(block[0])); }
-      else if (i % 5 == 3) { R4(c, &d, e, a, &b, i, &(block[0])); }
-      else if (i % 5 == 4) { R4(b, &c, d, e, &a, i, &(block[0])); }
+      if      (i % 5 == 0) { SHA1_R4(a, b, c, d, e, i); }
+      else if (i % 5 == 1) { SHA1_R4(e, a, b, c, d, i); }
+      else if (i % 5 == 2) { SHA1_R4(d, e, a, b, c, i); }
+      else if (i % 5 == 3) { SHA1_R4(c, d, e, a, b, i); }
+      else if (i % 5 == 4) { SHA1_R4(b, c, d, e, a, i); }
     }
   }
 
@@ -204,15 +168,12 @@ void sha1(FILE *stream, uint64_t stream_len, uint8_t *sha1_result)
   sha1_ctx ctx;
   sha1_init(&ctx);
 
-  uint8_t *input_buffer = malloc(1024);
-  unsigned input_size = 0;
-
-  while ((input_size = fread(input_buffer, 1, 1024, stream)) > 0)
+  // will this crash if reading a large enough file?
+  unsigned char *input_buffer = malloc(stream_len + 1);
+  if (fread(input_buffer, 1, stream_len, stream) ) {};
+  for (unsigned i = 0; i < stream_len; i++)
   {
-    for (unsigned i = 0; i < 1024; i++)
-    {
-      sha1_update(&ctx, (const unsigned char *)input_buffer + i, 1);
-    }
+    sha1_update(&ctx, (const unsigned char *)input_buffer + i, 1);
   }
   sha1_finalize(&ctx);
 
