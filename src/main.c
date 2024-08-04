@@ -1,5 +1,5 @@
 #include "main.h"
-#include "crc/crc.h"
+#include "crc/crc.c"
 #include "md5/md5.c"
 #include "sha1/sha1.c"
 
