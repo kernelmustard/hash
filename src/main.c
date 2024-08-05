@@ -119,6 +119,7 @@ int main(int argc, char **argv) {
   if (arg_flags & 0x02) {
     if (arg_flags & 0x01) { printf("Reading file %s\n", filename); };
     stream = fopen(filename, "rb");
+    free(filename);
 
 
     fseek(stream, 0, SEEK_END); // move fp to EOF, and ftell the num of bytes from beginning to fp
@@ -136,14 +137,25 @@ int main(int argc, char **argv) {
   {
     stream_len = strlen(string);
     stream = tmpfile();
+
     if (stream == NULL) 
     {
       perror("Unable to create tmpfile!\n");
       return -1;
     }
 
-    for (unsigned i = 0; string[i] != '\0'; i++) { fputc(string[i], stream); }
+    fprintf(stream, "%s", string);
+
+    // test
+    char c = fgetc(stream);
+    while (c != EOF)
+    {
+      printf("%c", c);
+      c = fgetc(stream);
+    }
     rewind(stream);
+
+    //rewind(stream);
     free(string);
   } 
   else 

@@ -9,32 +9,43 @@ prod: src/main.c
 	$(CC) src/main.c -O3 $(CC_OPTS) -o ./hash
 	strip -s ./hash
 
-test: help crc32 md5 sha1
+clean: 
+	rm -f ./hash
+	rm -f ./test
 
-help: ./hash
-	echo "\n\n"
-	./hash --help
+test: com_test run_test
 
-crc32: ./hash
-	echo "\n\n"
-	./hash --file ./hash --crc32
-	crc32 ./hash
-	echo ""
-	./hash --string "./hash" --crc32 
-	bash -c 'crc32 <(echo -n "./hash")'
+com_test: src/test.c
+	$(CC) src/test.c -Og $(CC_OPTS) -lcunit -o ./test
+run_test: ./test
+	./test
 
-md5: ./hash
-	echo "\n\n"
-	./hash --file ./hash --md5 
-	md5sum ./hash
-	echo ""
-	./hash --string "./hash" --md5 
-	bash -c 'md5sum <(echo -n "./hash")'
-
-sha1: ./hash
-	echo "\n\n"
-	./hash --file ./hash --sha1 
-	sha1sum ./hash
-	echo ""
-	./hash --string "./hash" --sha1 
-	bash -c 'sha1sum <(echo -n "./hash")'
+#test: help crc32 md5 sha1
+#
+#help: ./hash
+#	echo "\n\n"
+#	./hash --help
+#
+#crc32: ./hash
+#	echo "\n\n"
+#	./hash --file ./hash --crc32
+#	crc32 ./hash
+#	echo ""
+#	./hash --string "./hash" --crc32 
+#	bash -c 'crc32 <(echo -n "./hash")'
+#
+#md5: ./hash
+#	echo "\n\n"
+#	./hash --file ./hash --md5 
+#	md5sum ./hash
+#	echo ""
+#	./hash --string "./hash" --md5 
+#	bash -c 'md5sum <(echo -n "./hash")'
+#
+#sha1: ./hash
+#	echo "\n\n"
+#	./hash --file ./hash --sha1 
+#	sha1sum ./hash
+#	echo ""
+#	./hash --string "./hash" --sha1 
+#	bash -c 'sha1sum <(echo -n "./hash")'
