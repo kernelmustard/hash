@@ -7,8 +7,15 @@
  * implementation into more modern C.
  */
 
+// rotate 32-bit word left by n bits
+/*uint32_t rotate_left(uint32_t word, uint32_t bits) 
+{
+  return (word << bits) | (word >> (32 - bits));
+}*/
+#define md5_rol(word, bits) ((word << bits) | (word >> (32 - bits)))
+
 // MD5 Algorithm compression functions
-uint32_t F(uint32_t X, uint32_t Y, uint32_t Z)
+/*uint32_t F(uint32_t X, uint32_t Y, uint32_t Z)
 {
   return ((X & Y) | (~X & Z));
 } 
@@ -23,13 +30,11 @@ uint32_t H(uint32_t X, uint32_t Y, uint32_t Z)
 uint32_t I(uint32_t X, uint32_t Y, uint32_t Z)
 {
   return (Y ^ (X | ~Z));
-}
-
-// rotate 32-bit word left by n bits
-uint32_t rotate_left(uint32_t word, uint32_t bits) 
-{
-  return (word << bits) | (word >> (32 - bits));
-}
+}*/
+#define MD5_F(X, Y, Z) ((X & Y) | (~X & Z))
+#define MD5_G(X, Y, Z) ((X & Z) | (Y & ~Z))
+#define MD5_H(X, Y, Z) (X ^ Y ^ Z)
+#define MD5_I(X, Y, Z) (Y ^ (X | ~Z))
 
 void md5_step(md5_context *ctx, uint32_t *input)
 {
@@ -47,19 +52,19 @@ void md5_step(md5_context *ctx, uint32_t *input)
     switch (i / 16) 
     {
       case 0:
-        E = F(BB, CC, DD);
+        E = MD5_F(BB, CC, DD);
         j = i;
         break;
       case 1:
-        E = G(BB, CC, DD);
+        E = MD5_G(BB, CC, DD);
         j = ((i * 5) + 1) % 16;
         break;
       case 2:
-        E = H(BB, CC, DD);
+        E = MD5_H(BB, CC, DD);
         j = ((i * 3) + 5) % 16;
         break;
       default:
-        E = I(BB, CC, DD);
+        E = MD5_I(BB, CC, DD);
         j = (i * 7) % 16;
         break;
     }
@@ -67,7 +72,7 @@ void md5_step(md5_context *ctx, uint32_t *input)
     uint32_t temp = DD;
     DD = CC;
     CC = BB;
-    BB = BB + rotate_left(AA + E + ctx->K[i] + input[j], ctx->S[i]);
+    BB = BB + md5_rol((AA + E + ctx->K[i] + input[j]), ctx->S[i]);
     AA = temp;
   }
 

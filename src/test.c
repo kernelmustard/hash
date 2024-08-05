@@ -1,6 +1,7 @@
-#include "sha1/sha1.c"
-#include "md5/md5.c"
 #include "crc32/crc32.c"
+#include "md5/md5.c"
+#include "sha1/sha1.c"
+#include "sha256/sha256.c"
 
 #include "CUnit/Basic.h"
 
@@ -766,12 +767,49 @@ void sha1_vec8(void)
   return;
 }
 
+void sha256_vec1(void)
+{
+  char const string[] = "";
+  char const expect[] = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+  char result[65] = { '\0' };
+
+  // convert string to FILE
+  FILE *stream = NULL;
+  uint64_t len = sizeof(string)/sizeof(string[0])-1;
+  string_to_file(string, &stream, len);
+
+  // calculate hash
+  uint8_t hash[32] = { 0 };
+  sha256(stream, len, &(hash[0]));
+
+  // convert result to string
+  unsigned res_ctr = 0;
+  for (unsigned i = 0; i < (sizeof(hash) / sizeof(hash[0])); i++)
+  {
+    sprintf(&result[res_ctr], "%x", hash[i] & 0xf0);
+    sprintf(&result[res_ctr+1], "%x", hash[i] & 0x0f);
+    res_ctr += 2;
+  }
+
+  // compare result to known good
+  CU_ASSERT( strncmp(result, expect, 64) == SUCCESS );
+
+  if (fclose(stream) != 0)
+  {
+    fprintf(stderr, "Failed to close file with %d\n", errno);
+  }
+  return;
+
+  return;
+}
+
 int main(void)
 {
   // declare test suites
   CU_pSuite crc32_pSuite = NULL;
   CU_pSuite md5_pSuite = NULL;
   CU_pSuite sha1_pSuite = NULL;
+  CU_pSuite sha256_pSuite = NULL;
 
   // initalize CUnit registry
   if (CUE_SUCCESS != CU_initialize_registry())
@@ -800,6 +838,14 @@ int main(void)
     CU_cleanup_registry();
     return CU_get_error();
   }
+
+  sha1_pSuite = CU_add_suite("SHA1", init_suite, clean_suite);  // https://github.com/froydnj/ironclad/blob/master/testing/test-vectors/sha256.testvec
+  if (sha256_pSuite == NULL)
+  {
+    CU_cleanup_registry();
+    return CU_get_error();
+  }
+
   
   // add tests to suites
   if (NULL == CU_add_test(crc32_pSuite, "Vector 1", crc32_vec1) ||
@@ -834,6 +880,12 @@ int main(void)
       NULL == CU_add_test(sha1_pSuite, "Vector 6", sha1_vec6) ||
       NULL == CU_add_test(sha1_pSuite, "Vector 7", sha1_vec7) ||
       NULL == CU_add_test(sha1_pSuite, "Vector 8", sha1_vec8))
+  {
+    CU_cleanup_registry();
+    return CU_get_error();
+  }
+
+  if (NULL == CU_add_test(sha256_pSuite, "Vector 1", sha256_vec1) )
   {
     CU_cleanup_registry();
     return CU_get_error();

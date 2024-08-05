@@ -2,6 +2,7 @@
 #include "crc32/crc32.c"
 #include "md5/md5.c"
 #include "sha1/sha1.c"
+#include "sha256/sha256.c"
 
 
 uint8_t arg_flags = 0;
@@ -14,7 +15,7 @@ uint8_t arg_flags = 0;
  * 0 crc32    (0x10)
  * 0 md5      (0x20)
  * 0 sha1     (0x40)
- * 0 
+ * 0 sha256   (0x80)
  */
 
 int main(int argc, char **argv) {  
@@ -40,6 +41,7 @@ int main(int argc, char **argv) {
       {"crc32",   no_argument,        0, 'c'},
       {"md5",     no_argument,        0, 'm'},
       {"sha1",    no_argument,        0, 'o'},
+      {"sha256",  no_argument,        0, 't'},
       {0, 0, 0, 0} // "The last element of the array has to be filled with zeros."
     };
 
@@ -103,6 +105,10 @@ int main(int argc, char **argv) {
         if (arg_flags & 0x01) { printf("SHA1 flag set\n"); }
         if (!(arg_flags & 0x08)) { break; }
         // fall through
+      case 't':
+        arg_flags |= 0x80;
+        if (arg_flags & 0x01) { printf("SHA256 flag set\n"); }
+        break;  // break at end
 
       case '?':
         // getopt_long already printed an error message.
@@ -119,7 +125,8 @@ int main(int argc, char **argv) {
   if (arg_flags & 0x02) {
     if (arg_flags & 0x01) { printf("Reading file %s\n", filename); };
     stream = fopen(filename, "rb");
-    free(filename);
+
+    if (filename != NULL) { free(filename); }
 
 
     fseek(stream, 0, SEEK_END); // move fp to EOF, and ftell the num of bytes from beginning to fp
@@ -188,11 +195,20 @@ int main(int argc, char **argv) {
     uint8_t sha1_result[20] = { 0 };
     sha1(stream, stream_len, &(sha1_result[0]));
     printf("SHA1\t");
-    for (unsigned i = 0; i < 20; i++) { printf("%02x", sha1_result[i]); }
+    for (unsigned i = 0; i < (sizeof(sha1_result) / sizeof(sha1_result[0])); i++) { printf("%02x", sha1_result[i]); }
     printf("\n");
   }
 
-  if (filename != NULL) { free(filename); }
+  // SHA256
+  if (arg_flags & 0x80)
+  {
+    uint8_t sha256_result[32] = { 0 };
+    sha256(stream, stream_len, &(sha256_result[0]));
+    printf("SHA256\t");
+    for (unsigned i = 0; i < (sizeof(sha256_result) / sizeof(sha256_result[0])); i++) { printf("%02x", sha256_result[i]); }
+    printf("\n");
+  }
+
   fclose(stream);
   return 0;
 }
