@@ -1,4 +1,4 @@
-#include "crc.h"
+#include "crc32.h"
 
 /*
  * Reworked version of W3C's algo published in their PNG specification (https://www.w3.org/TR/png/#D-CRCAppendix)

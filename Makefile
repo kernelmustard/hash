@@ -17,7 +17,7 @@ test: com_test run_test
 
 com_test: src/test.c
 	$(CC) src/test.c -Og $(CC_OPTS) -lcunit -o ./test
-run_test: ./test
+run_test: 
 	./test
 
 #test: help crc32 md5 sha1
