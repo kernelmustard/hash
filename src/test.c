@@ -798,7 +798,244 @@ void sha256_vec1(void)
   {
     fprintf(stderr, "Failed to close file with %d\n", errno);
   }
+
   return;
+}
+void sha256_vec2(void)
+{
+  char const string[] = "a";
+  char const expect[] = "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb";
+  char result[65] = { '\0' };
+
+  // convert string to FILE
+  FILE *stream = NULL;
+  uint64_t len = sizeof(string)/sizeof(string[0])-1;
+  string_to_file(string, &stream, len);
+
+  // calculate hash
+  uint8_t hash[32] = { 0 };
+  sha256(stream, len, &(hash[0]));
+
+  // convert result to string
+  unsigned res_ctr = 0;
+  for (unsigned i = 0; i < (sizeof(hash) / sizeof(hash[0])); i++)
+  {
+    sprintf(&result[res_ctr], "%x", hash[i] & 0xf0);
+    sprintf(&result[res_ctr+1], "%x", hash[i] & 0x0f);
+    res_ctr += 2;
+  }
+
+  // compare result to known good
+  CU_ASSERT( strncmp(result, expect, 64) == SUCCESS );
+
+  if (fclose(stream) != 0)
+  {
+    fprintf(stderr, "Failed to close file with %d\n", errno);
+  }
+
+  return;
+}
+void sha256_vec3(void)
+{
+  char const string[] = "abc";
+  char const expect[] = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+  char result[65] = { '\0' };
+
+  // convert string to FILE
+  FILE *stream = NULL;
+  uint64_t len = sizeof(string)/sizeof(string[0])-1;
+  string_to_file(string, &stream, len);
+
+  // calculate hash
+  uint8_t hash[32] = { 0 };
+  sha256(stream, len, &(hash[0]));
+
+  // convert result to string
+  unsigned res_ctr = 0;
+  for (unsigned i = 0; i < (sizeof(hash) / sizeof(hash[0])); i++)
+  {
+    sprintf(&result[res_ctr], "%x", hash[i] & 0xf0);
+    sprintf(&result[res_ctr+1], "%x", hash[i] & 0x0f);
+    res_ctr += 2;
+  }
+
+  // compare result to known good
+  CU_ASSERT( strncmp(result, expect, 64) == SUCCESS );
+
+  if (fclose(stream) != 0)
+  {
+    fprintf(stderr, "Failed to close file with %d\n", errno);
+  }
+
+  return;
+}
+void sha256_vec4(void)
+{
+  char const string[] = "message digest";
+  char const expect[] = "f7846f55cf23e14eebeab5b4e1550cad5b509e3348fbc4efa3a1413d393cb650";
+  char result[65] = { '\0' };
+
+  // convert string to FILE
+  FILE *stream = NULL;
+  uint64_t len = sizeof(string)/sizeof(string[0])-1;
+  string_to_file(string, &stream, len);
+
+  // calculate hash
+  uint8_t hash[32] = { 0 };
+  sha256(stream, len, &(hash[0]));
+
+  // convert result to string
+  unsigned res_ctr = 0;
+  for (unsigned i = 0; i < (sizeof(hash) / sizeof(hash[0])); i++)
+  {
+    sprintf(&result[res_ctr], "%x", hash[i] & 0xf0);
+    sprintf(&result[res_ctr+1], "%x", hash[i] & 0x0f);
+    res_ctr += 2;
+  }
+
+  // compare result to known good
+  CU_ASSERT( strncmp(result, expect, 64) == SUCCESS );
+
+  if (fclose(stream) != 0)
+  {
+    fprintf(stderr, "Failed to close file with %d\n", errno);
+  }
+
+  return;
+}
+void sha256_vec5(void)
+{
+  char const string[] = "abcdefghijklmnopqrstuvwxyz";
+  char const expect[] = "71c480df93d6ae2f1efad1447c66c9525e316218cf51fc8d9ed832f2daf18b73";
+  char result[65] = { '\0' };
+
+  // convert string to FILE
+  FILE *stream = NULL;
+  uint64_t len = sizeof(string)/sizeof(string[0])-1;
+  string_to_file(string, &stream, len);
+
+  // calculate hash
+  uint8_t hash[32] = { 0 };
+  sha256(stream, len, &(hash[0]));
+
+  // convert result to string
+  unsigned res_ctr = 0;
+  for (unsigned i = 0; i < (sizeof(hash) / sizeof(hash[0])); i++)
+  {
+    sprintf(&result[res_ctr], "%x", hash[i] & 0xf0);
+    sprintf(&result[res_ctr+1], "%x", hash[i] & 0x0f);
+    res_ctr += 2;
+  }
+
+  // compare result to known good
+  CU_ASSERT( strncmp(result, expect, 64) == SUCCESS );
+
+  if (fclose(stream) != 0)
+  {
+    fprintf(stderr, "Failed to close file with %d\n", errno);
+  }
+
+  return;
+}
+void sha256_vec6(void)
+{
+  char const string[] = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+  char const expect[] = "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1";
+  char result[65] = { '\0' };
+
+  // convert string to FILE
+  FILE *stream = NULL;
+  uint64_t len = sizeof(string)/sizeof(string[0])-1;
+  string_to_file(string, &stream, len);
+
+  // calculate hash
+  uint8_t hash[32] = { 0 };
+  sha256(stream, len, &(hash[0]));
+
+  // convert result to string
+  unsigned res_ctr = 0;
+  for (unsigned i = 0; i < (sizeof(hash) / sizeof(hash[0])); i++)
+  {
+    sprintf(&result[res_ctr], "%x", hash[i] & 0xf0);
+    sprintf(&result[res_ctr+1], "%x", hash[i] & 0x0f);
+    res_ctr += 2;
+  }
+
+  // compare result to known good
+  CU_ASSERT( strncmp(result, expect, 64) == SUCCESS );
+
+  if (fclose(stream) != 0)
+  {
+    fprintf(stderr, "Failed to close file with %d\n", errno);
+  }
+
+  return;
+}
+void sha256_vec7(void)
+{
+  char const string[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  char const expect[] = "db4bfcbd4da0cd85a60c3c37d3fbd8805c77f15fc6b1fdfe614ee0a7c8fdb4c0";
+  char result[65] = { '\0' };
+
+  // convert string to FILE
+  FILE *stream = NULL;
+  uint64_t len = sizeof(string)/sizeof(string[0])-1;
+  string_to_file(string, &stream, len);
+
+  // calculate hash
+  uint8_t hash[32] = { 0 };
+  sha256(stream, len, &(hash[0]));
+
+  // convert result to string
+  unsigned res_ctr = 0;
+  for (unsigned i = 0; i < (sizeof(hash) / sizeof(hash[0])); i++)
+  {
+    sprintf(&result[res_ctr], "%x", hash[i] & 0xf0);
+    sprintf(&result[res_ctr+1], "%x", hash[i] & 0x0f);
+    res_ctr += 2;
+  }
+
+  // compare result to known good
+  CU_ASSERT( strncmp(result, expect, 64) == SUCCESS );
+
+  if (fclose(stream) != 0)
+  {
+    fprintf(stderr, "Failed to close file with %d\n", errno);
+  }
+
+  return;
+}
+void sha256_vec8(void)
+{
+  char const string[] = "12345678901234567890123456789012345678901234567890123456789012345678901234567890";
+  char const expect[] = "f371bc4a311f2b009eef952dd83ca80e2b60026c8e935592d0f9c308453c813e";
+  char result[65] = { '\0' };
+
+  // convert string to FILE
+  FILE *stream = NULL;
+  uint64_t len = sizeof(string)/sizeof(string[0])-1;
+  string_to_file(string, &stream, len);
+
+  // calculate hash
+  uint8_t hash[32] = { 0 };
+  sha256(stream, len, &(hash[0]));
+
+  // convert result to string
+  unsigned res_ctr = 0;
+  for (unsigned i = 0; i < (sizeof(hash) / sizeof(hash[0])); i++)
+  {
+    sprintf(&result[res_ctr], "%x", hash[i] & 0xf0);
+    sprintf(&result[res_ctr+1], "%x", hash[i] & 0x0f);
+    res_ctr += 2;
+  }
+
+  // compare result to known good
+  CU_ASSERT( strncmp(result, expect, 64) == SUCCESS );
+
+  if (fclose(stream) != 0)
+  {
+    fprintf(stderr, "Failed to close file with %d\n", errno);
+  }
 
   return;
 }
@@ -854,7 +1091,7 @@ int main(void)
       NULL == CU_add_test(crc32_pSuite, "Vector 4", crc32_vec4) ||
       NULL == CU_add_test(crc32_pSuite, "Vector 5", crc32_vec5) ||
       NULL == CU_add_test(crc32_pSuite, "Vector 6", crc32_vec6) ||
-      NULL == CU_add_test(crc32_pSuite, "Vector 7", crc32_vec7))
+      NULL == CU_add_test(crc32_pSuite, "Vector 7", crc32_vec7) )
   {
     CU_cleanup_registry();
     return CU_get_error();
@@ -866,7 +1103,7 @@ int main(void)
       NULL == CU_add_test(md5_pSuite, "Vector 4", md5_vec4) ||
       NULL == CU_add_test(md5_pSuite, "Vector 5", md5_vec5) ||
       NULL == CU_add_test(md5_pSuite, "Vector 6", md5_vec6) ||
-      NULL == CU_add_test(md5_pSuite, "Vector 7", md5_vec7))
+      NULL == CU_add_test(md5_pSuite, "Vector 7", md5_vec7) )
   {
     CU_cleanup_registry();
     return CU_get_error();
@@ -879,13 +1116,20 @@ int main(void)
       NULL == CU_add_test(sha1_pSuite, "Vector 5", sha1_vec5) ||
       NULL == CU_add_test(sha1_pSuite, "Vector 6", sha1_vec6) ||
       NULL == CU_add_test(sha1_pSuite, "Vector 7", sha1_vec7) ||
-      NULL == CU_add_test(sha1_pSuite, "Vector 8", sha1_vec8))
+      NULL == CU_add_test(sha1_pSuite, "Vector 8", sha1_vec8) )
   {
     CU_cleanup_registry();
     return CU_get_error();
   }
 
-  if (NULL == CU_add_test(sha256_pSuite, "Vector 1", sha256_vec1) )
+  if (NULL == CU_add_test(sha256_pSuite, "Vector 1", sha256_vec1) ||
+      NULL == CU_add_test(sha256_pSuite, "Vector 2", sha256_vec2) ||
+      NULL == CU_add_test(sha256_pSuite, "Vector 3", sha256_vec3) ||
+      NULL == CU_add_test(sha256_pSuite, "Vector 4", sha256_vec4) ||
+      NULL == CU_add_test(sha256_pSuite, "Vector 5", sha256_vec5) ||
+      NULL == CU_add_test(sha256_pSuite, "Vector 6", sha256_vec6) ||
+      NULL == CU_add_test(sha256_pSuite, "Vector 7", sha256_vec7) ||
+      NULL == CU_add_test(sha256_pSuite, "Vector 8", sha256_vec8) )
   {
     CU_cleanup_registry();
     return CU_get_error();

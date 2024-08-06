@@ -3,12 +3,13 @@
 * Author:     kernelmustard (https://github.com/kernelmustard)
 * Copyright:  GPLv3
 * Details:    This implementation uses little endian uint8_t order
+* Note:       Derived from Brad Conte (brad AT bradconte.com). His 
+              implementation can be found at 
+              https://github.com/B-Con/crypto-algorithms/blob/master/sha256.c
 *********************************************************************/
 
-/*************************** HEADER FILES ***************************/
 #include "sha256.h"
 
-/****************************** MACROS ******************************/
 #define SHA256_ROTR(a,b) (((a) >> (b)) | ((a) << (32-(b))))
 
 #define SHA256_CH(x,y,z) (((x) & (y)) ^ (~(x) & (z)))
@@ -18,9 +19,6 @@
 #define SHA256_EP0(x) (SHA256_ROTR(x,2) ^ SHA256_ROTR(x,13) ^ SHA256_ROTR(x,22))
 #define SHA256_EP1(x) (SHA256_ROTR(x,6) ^ SHA256_ROTR(x,11) ^ SHA256_ROTR(x,25))
 
-
-
-/**************************** VARIABLES *****************************/
 static const uint32_t SHA256_K[64] = {
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
   0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -32,7 +30,6 @@ static const uint32_t SHA256_K[64] = {
   0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-/*********************** FUNCTION DEFINITIONS ***********************/
 void sha256_step(sha256_context *ctx, const uint8_t data[])
 {
 	uint32_t a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, h = 0, i = 0, j = 0;
@@ -107,7 +104,7 @@ void sha256_update(sha256_context *ctx, const uint8_t data[], size_t len)
 	}
 }
 
-void sha256_final(sha256_context *ctx, uint8_t hash[])
+void sha256_final(sha256_context *ctx)
 {
 	uint32_t i;
 
@@ -145,14 +142,14 @@ void sha256_final(sha256_context *ctx, uint8_t hash[])
 	// reverse all the uint8_ts when copying the final state to the output hash.
 	for (i = 0; i < 4; ++i) 
   {
-		hash[i]      = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
-		hash[i + 4]  = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
-		hash[i + 8]  = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
-		hash[i + 12] = (ctx->state[3] >> (24 - i * 8)) & 0x000000ff;
-		hash[i + 16] = (ctx->state[4] >> (24 - i * 8)) & 0x000000ff;
-		hash[i + 20] = (ctx->state[5] >> (24 - i * 8)) & 0x000000ff;
-		hash[i + 24] = (ctx->state[6] >> (24 - i * 8)) & 0x000000ff;
-		hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
+		ctx->digest[i]      = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
+		ctx->digest[i + 4]  = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
+		ctx->digest[i + 8]  = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
+		ctx->digest[i + 12] = (ctx->state[3] >> (24 - i * 8)) & 0x000000ff;
+		ctx->digest[i + 16] = (ctx->state[4] >> (24 - i * 8)) & 0x000000ff;
+		ctx->digest[i + 20] = (ctx->state[5] >> (24 - i * 8)) & 0x000000ff;
+		ctx->digest[i + 24] = (ctx->state[6] >> (24 - i * 8)) & 0x000000ff;
+		ctx->digest[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
 	}
 }
 
@@ -160,8 +157,6 @@ void sha256(FILE *stream, uint64_t stream_len, uint8_t *sha256_result)
 {
   sha256_context ctx;
   sha256_init(&ctx);
-
-  uint8_t buf[64] = { 0 };
 
   uint8_t *input_buffer = malloc(1024);
   size_t input_size = 0;
@@ -171,10 +166,10 @@ void sha256(FILE *stream, uint64_t stream_len, uint8_t *sha256_result)
     sha256_update(&ctx, input_buffer, input_size);
     for (unsigned i = 0; i < 1024; i++) { input_buffer[i] = 0; }
   }
-  sha256_final(&ctx, buf);
+  sha256_final(&ctx);
 
   // pass result to main
-  memcpy(sha256_result, buf, 32);
+  memcpy(sha256_result, ctx.digest, 32);
 
   // clean up
   free(input_buffer);
