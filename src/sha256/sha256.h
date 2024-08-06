@@ -4,28 +4,25 @@
  * @copyright GPLv3
  * @brief Interface to SHA256 implementation
  * 
- *  Overview:   SHA256 is a cryptographic hashing algorithm specifified 
- *              in RFC 6234 that maps an arbitrary number of bytes to 
- *              a 64-byte hash.
+ *  Overview:   SHA256 is a cryptographic hashing algorithm specifified in RFC 6234
+ *              that maps an arbitrary number of bytes to a 64-byte hash.
  * 
- *  Usage:      1) call sha256 with a FILE stream, stream length, and
- *              ptr to a 64 byte array to hold result
+ *  Usage:      1) call sha256 with a FILE stream, stream length, and ptr to a 
+ *              64 byte array to hold result
  * 
- *              2) sha256 will call sha256_init to initialize the 
- *              context struct sha256_context before hashing the FILE 
- *              stream contents
+ *              2) sha256 will call sha256_init to initialize the context 
+ *              struct sha256_context before hashing the FILE stream 
+ *              contents
  *              
- *              3) sha256 will read FILE stream 1024 bytes at a time 
- *              and call sha256_update to hash each string segment
+ *              3) sha256 will read FILE stream 1024 bytes at a time and call 
+ *              sha256_update to hash each string segment
  * 
- *              4) sha256 will call sha256_finalize to pad length and 
- *              perform final hash
+ *              4) sha256 will call sha256_finalize to pad length and perform 
+ *              final hash
  * 
- *              5) sha256 will copy result to array passed by 
- *              reference earlier
- * @note  Derived from Brad Conte (brad AT bradconte.com). His 
- *        implementation can be found at 
-          https://github.com/B-Con/crypto-algorithms/blob/master/sha256.c
+ *              5) sha256 will copy result to array passed by reference earlier
+ * @note  Derived from Brad Conte (brad AT bradconte.com). His implementation 
+ *        can be found at https://github.com/B-Con/crypto-algorithms/blob/master/sha256.c
  */
 
 #ifndef SHA256_H
@@ -37,9 +34,9 @@
 #include <memory.h> // memset(), memcpy()
 
 typedef struct {
-	uint8_t data[64];
-	uint32_t datalen;
-	unsigned long long bitlen;
+	uint8_t buffer[64];
+	uint32_t buffer_offset;
+	uint64_t bitlen;
 	uint32_t state[8];
   uint8_t digest[64];
 } sha256_context;
