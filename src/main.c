@@ -122,12 +122,12 @@ int main(int argc, char **argv) {
   FILE *stream = NULL; // ptr to input message stream
   uint64_t stream_len = 0; // stream length, 64 bits can hold the length of a 16 EiB file
 
-  if (arg_flags & 0x02) {
+  if (arg_flags & 0x02) 
+  {
     if (arg_flags & 0x01) { printf("Reading file %s\n", filename); };
     stream = fopen(filename, "rb");
 
     if (filename != NULL) { free(filename); }
-
 
     fseek(stream, 0, SEEK_END); // move fp to EOF, and ftell the num of bytes from beginning to fp
     stream_len = ftell(stream);
@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
     uint8_t md5_result[16] = { 0 };
     md5(stream, &(md5_result[0]));
     printf("MD5\t");
-    for (unsigned i = 0; i < 16; i++) { printf("%02x", md5_result[i]); }
+    for (unsigned i = 0; i < (sizeof(md5_result) / sizeof(md5_result[0])); i++) { printf("%02x", md5_result[i]); }
     printf("\n");
   }
 

@@ -839,7 +839,7 @@ int main(void)
     return CU_get_error();
   }
 
-  sha1_pSuite = CU_add_suite("SHA1", init_suite, clean_suite);  // https://github.com/froydnj/ironclad/blob/master/testing/test-vectors/sha256.testvec
+  sha256_pSuite = CU_add_suite("SHA256", init_suite, clean_suite);  // https://github.com/froydnj/ironclad/blob/master/testing/test-vectors/sha256.testvec
   if (sha256_pSuite == NULL)
   {
     CU_cleanup_registry();

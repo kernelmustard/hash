@@ -16,3 +16,4 @@ toy reimplementation of common hashing algorithms
 ## SHA256
 - https://datatracker.ietf.org/doc/html/rfc6234
 - https://github.com/intel/tinycrypt/blob/master/lib/source/sha256.c
+- https://github.com/B-Con/crypto-algorithms/blob/master/sha256.c
