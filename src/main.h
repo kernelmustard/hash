@@ -22,6 +22,7 @@
 /**
  * @brief small helper function to print help message
  * @return void
+ * @param void
  */
 void print_help(void);
 

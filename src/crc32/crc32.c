@@ -1,24 +1,24 @@
-/*********************************************************************
- * 
-*********************************************************************/
+/**
+ * @file crc32.h
+ * @author kernelmustard (https://github.com/kernelmustard)
+ * @copyright GPLv3
+ * @brief CRC32 implementation 
+ * @note Reworked version of W3C's algo published in their PNG specification 
+ * (https://www.w3.org/TR/png/#D-CRCAppendix). Many thanks to all the folks 
+ * that worked on it
+ */
 
 #include "crc32.h"
-
-/*
- * Reworked version of W3C's algo published in their PNG specification (https://www.w3.org/TR/png/#D-CRCAppendix)
- * super thanks to all the folks that worked on it
- */
 
 void crc32(FILE *stream, uint64_t stream_len, uint32_t *crc32_result) 
 {
   // parse stream
   uint8_t *message = malloc(stream_len);
   size_t ret = fread(message, 1, stream_len, stream);
-  rewind(stream); // set fp to beginning of stream *** DO ON ALL ALGO FUNCTIONS ***
   if (ret <= 0) {}  // do nothing to quiet error message
 
   // Table of CRCs of all 8-bit messages.
-  uint32_t crc_table[256];
+  uint32_t crc32_table[256];
   for (unsigned index = 0; index < 256; index++) 
   {
     uint32_t crc_table_val = (uint32_t)index;
@@ -33,15 +33,18 @@ void crc32(FILE *stream, uint64_t stream_len, uint32_t *crc32_result)
         crc_table_val >>= 1; 
       }
     }
-    crc_table[index] = crc_table_val;
+    crc32_table[index] = crc_table_val;
   }
 
   uint32_t crc32_string = 0xffffffffU;
 
   for (unsigned count = 0; count < stream_len; count++) 
   {
-    crc32_string = crc_table[(crc32_string ^ message[count]) & 0xff] ^ (crc32_string >> 8);
+    crc32_string = crc32_table[(crc32_string ^ message[count]) & 0xff] ^ (crc32_string >> 8);
   }
+
+  // clean up
+  rewind(stream);
 
   *crc32_result = crc32_string ^ 0xffffffffU; // return 1s complement of crc32_string (used message[0..stream_len-1])
 }

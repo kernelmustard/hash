@@ -160,11 +160,6 @@ void sha1_finalize(sha1_ctx *ctx)
   {
     ctx->digest[i] = (uint8_t) ((ctx->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
   }
-
-  // wipe vars
-  //memset(ctx, '\0', sizeof(*ctx));  // this undoes all progress lmao
-  //memset(&finalcount, '\0', sizeof(finalcount));  // array is static, should be cleaned up automatically once we leave this function
-
   return;
 }
 

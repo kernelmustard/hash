@@ -4,7 +4,24 @@
  * @copyright GPLv3
  * @brief SHA1 implementation
  * 
- *  Overview: SHA1 
+ *  Overview:   SHA1 is a cryptographic hashing algorithm specified in RFC 1321 
+ *              that maps and arbitrary number of bytes to a 20-byte hash
+ * 
+ * Usage:       1) call sha1() with a FILE stream, stream length, and ptr to a 
+ *              20-byte array to hold result
+ * 
+ *              2) sha1() will call sha1_init() to initialize the sha1_context 
+ *              struct before hashing the FILE stream contents
+ * 
+ *              3) sha1() will malloc a buffer and read entire FILE stream 
+ *              contents, and call sha1_update() to hash the string a byte at a
+ *              time
+ * 
+ *              4) sha1() will call sha1_finalize() to pad length and perform 
+ *              final hash
+ * 
+ *              5) sha1() will copy result to array passed by reference earlier
+ * 
  * @note derived from Steve Reid's (steve@edmweb.com) implementation, which can
  * be found at https://github.com/clibs/sha1/blob/master/sha1.c
  */
@@ -19,10 +36,10 @@
 
 typedef struct
 {
-  uint32_t state[5];
-  uint8_t digest[20];
-  uint32_t count[2];
   uint8_t buffer[64];
+  uint32_t count[2];
+  uint32_t state[5];
+  uint8_t digest[20]; // Result of algorithm
 } sha1_ctx;
 
 typedef union

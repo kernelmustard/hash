@@ -7,20 +7,21 @@
  *  Overview:   SHA256 is a cryptographic hashing algorithm specifified in RFC 6234
  *              that maps an arbitrary number of bytes to a 32-byte hash.
  * 
- *  Usage:      1) call sha256 with a FILE stream, stream length, and ptr to a 
+ *  Usage:      1) call sha256() with a FILE stream, stream length, and ptr to a 
  *              32-byte array to hold result
  * 
- *              2) sha256 will call sha256_init to initialize the context 
- *              struct sha256_context before hashing the FILE stream 
- *              contents
+ *              2) sha256() will call sha256_init() to initialize the 
+ *              sha256_context struct before hashing the FILE stream contents
  *              
- *              3) sha256 will read FILE stream 1024 bytes at a time and call 
- *              sha256_update to hash each string segment
+ *              3) sha256() will read FILE stream 1024 bytes at a time and call 
+ *              sha256_update() to hash each string segment
  * 
- *              4) sha256 will call sha256_finalize to pad length and perform 
+ *              4) sha256() will call sha256_finalize() to pad length and perform 
  *              final hash
  * 
- *              5) sha256 will copy result to array passed by reference earlier
+ *              5) sha256() will copy result to array passed by reference 
+ *              earlier
+ * 
  * @note  Derived from Brad Conte (brad AT bradconte.com). His implementation 
  * can be found at https://github.com/B-Con/crypto-algorithms/blob/master/sha256.c
  */
@@ -47,12 +48,12 @@ typedef struct {
  * @return void
  * @param stream pointer to FILE stream containing data to hash
  * @param stream_len length of data in stream
- * @param sha256_result ptr to 32-byte array in main function
+ * @param sha256_result pointer to 32-byte array in main function
  */
 void sha256(FILE *stream, uint64_t stream_len, uint8_t *sha256_result);
 
 /**
- * @brief SHA256 initialization function. Initializes ctx
+ * @brief SHA256 initialization function. Initializes ctx values
  * @return void
  * @param ctx pointer to sha256_context struct
  */
@@ -65,21 +66,21 @@ void sha256_init(sha256_context *ctx);
  * @param ctx pointer to sha256_context struct
  * @param data 64-byte array 
  */
-void sha256_step(sha256_context *ctx, const uint8_t data[]);
+void sha256_step(sha256_context *ctx, const uint8_t *data);
 
 /**
  * @brief SHA256 update function. Process string segments in 64-byte blocks and
  * pass to sha256_step()
  * @return void
  * @param ctx pointer to sha256_context struct 
- * @param data array of bytes to process
+ * @param data pointer to array of bytes to process
  * @param len number of bytes in array to process
  */
 void sha256_update(sha256_context *ctx, const uint8_t *data, size_t len);
 
 /**
  * @brief SHA256 finalization function. Pad, rehash, and append total 
- * length before copying ctx->state[] to ctx->digest[] 
+ * length before copying ctx->state to ctx->digest
  * @return void
  * @param ctx pointer to sha256_context struct
  */

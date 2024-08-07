@@ -32,7 +32,7 @@ static const uint32_t SHA256_K[64] = {
   0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-void sha256_step(sha256_context *ctx, const uint8_t buffer[])
+void sha256_step(sha256_context *ctx, const uint8_t *buffer)
 {
 	uint32_t a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, h = 0, i = 0, j = 0;
   uint32_t t1 = 0, t2 = 0;
