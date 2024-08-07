@@ -1,8 +1,13 @@
-#include "sha1.h"
-
-/*
- * Thank you Steve Reid <steve@edmweb.com> for his implementation of SHA1 in C
+/**
+ * @file sha1.c
+ * @author kernelmustard (https://github.com/kernelmustard)
+ * @copyright GPLv3
+ * @brief SHA1 implementation
+ * @note derived from Steve Reid's (steve@edmweb.com) implementation, which can
+ * be found at https://github.com/clibs/sha1/blob/master/sha1.c
  */
+
+#include "sha1.h"
 
 // define transformative functions
 #define sha1_rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
@@ -36,7 +41,7 @@ void sha1_init(sha1_ctx *ctx)
   return;
 }
 
-void sha1_step(sha1_ctx *ctx, const unsigned char buffer[64])
+void sha1_step(sha1_ctx *ctx)
 {
   uint32_t a, b, c, d, e;
 
@@ -107,21 +112,21 @@ void sha1_step(sha1_ctx *ctx, const unsigned char buffer[64])
   return;
 }
 
-void sha1_update(sha1_ctx *ctx, const unsigned char *input_buffer, unsigned input_size)
+void sha1_update(sha1_ctx *ctx, const uint8_t *data, unsigned len)
 {
   uint32_t i, j;
 
   j = ctx->count[0];
-  if ( (ctx->count[0] += input_size << 3) < j) { ctx->count[1]++; }
-  ctx->count[1] += (input_size >> 29);
+  if ( (ctx->count[0] += len << 3) < j) { ctx->count[1]++; }
+  ctx->count[1] += (len >> 29);
   j = (j >> 3) & 63;
-  if ((j + input_size) > 63)
+  if ((j + len) > 63)
   {
-    memcpy(&ctx->buffer[j], input_buffer, (i = 64 - j));
-    sha1_step(ctx, ctx->buffer);
-    for (; i + 63 < input_size; i += 64)
+    memcpy(&ctx->buffer[j], data, (i = 64 - j));
+    sha1_step(ctx);
+    for (; i + 63 < len; i += 64)
     {
-      sha1_step(ctx, &input_buffer[i]);
+      sha1_step(ctx);
     }
     j = 0;
   }
@@ -129,7 +134,7 @@ void sha1_update(sha1_ctx *ctx, const unsigned char *input_buffer, unsigned inpu
   {
     i = 0;
   }
-  memcpy(&ctx->buffer[j], &input_buffer[i], input_size - i);
+  memcpy(&ctx->buffer[j], &data[i], len - i);
 
   return;
 }

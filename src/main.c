@@ -19,7 +19,6 @@
 #include "sha1/sha1.c"
 #include "sha256/sha256.c"
 
-
 uint8_t arg_flags = 0;
 /* 
  * 0 verbose  (0x01)

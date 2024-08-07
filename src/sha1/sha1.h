@@ -1,3 +1,14 @@
+/**
+ * @file sha1.h
+ * @author kernelmustard (https://github.com/kernelmustard)
+ * @copyright GPLv3
+ * @brief SHA1 implementation
+ * 
+ *  Overview: SHA1 
+ * @note derived from Steve Reid's (steve@edmweb.com) implementation, which can
+ * be found at https://github.com/clibs/sha1/blob/master/sha1.c
+ */
+
 #ifndef SHA1_H
 #define SHA1_H
 
@@ -20,10 +31,46 @@ typedef union
   uint32_t l[16];
 } CHAR64LONG16;
 
+/**
+ * @brief main SHA1 function that orchestrates the data from file stream to hash
+ * @return void
+ * @param stream pointer to FILE stream containing data to hash
+ * @param stream_len length of data in stream
+ * @param sha1_result ptr to 20-byte array in main function
+ */
 void sha1(FILE *stream, uint64_t stream_len, uint8_t *sha1_result);
+
+/**
+ * @brief SHA1 initialization function. Initializes ctx vars
+ * @return void
+ * @param ctx pointer to sha1_context struct
+ */
 void sha1_init(sha1_ctx *ctx);
-void sha1_step(sha1_ctx *ctx, const unsigned char buffer[64]);
-void sha1_update(sha1_ctx *ctx, const unsigned char *input_buffer, unsigned input_length);
+
+/**
+ * @brief SHA1 compression functions. Hashes data in ctx->buffer and passed 
+ * results to ctx->state[] array
+ * @return void
+ * @param ctx pointer to sha1_context struct
+ */
+void sha1_step(sha1_ctx *ctx);
+
+/**
+ * @brief SHA1 update function. Process string segments into 64-byte blocks and
+ * pass to sha1_step()
+ * @return void
+ * @param ctx pointer to sha1_context struct
+ * @param data array of bytes to process
+ * @param len number of bytes in array to process
+ */
+void sha1_update(sha1_ctx *ctx, const uint8_t *data, unsigned len);
+
+/**
+ * @brief SHA1 finalization function. Pad, rehash, and append total length 
+ * before copying ctx->state[] to ctx->digest[]
+ * @return void
+ * @param ctx pointer to sha1_context struct
+ */
 void sha1_finalize(sha1_ctx *ctx);
 
-#endif
+#endif  // SHA1_H

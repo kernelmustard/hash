@@ -2,9 +2,9 @@
  * @file sha256.c
  * @author kernelmustard (https://github.com/kernelmustard)
  * @copyright GPLv3
- * @brief Interface to SHA256 implementation
- * @note  Derived from Brad Conte (brad AT bradconte.com). His implementation 
- *        can be found at https://github.com/B-Con/crypto-algorithms/blob/master/sha256.c
+ * @brief SHA256 implementation
+ * @note  Derived from Brad Conte's (brad AT bradconte.com) implementation, which 
+ * can be found at https://github.com/B-Con/crypto-algorithms/blob/master/sha256.c
  */
 
 #include "sha256.h"
@@ -91,7 +91,7 @@ void sha256_init(sha256_context *ctx)
   return;
 }
 
-void sha256_update(sha256_context *ctx, const uint8_t buffer[], size_t len)
+void sha256_update(sha256_context *ctx, const uint8_t *buffer, size_t len)
 {
 	uint32_t i;
 
@@ -106,7 +106,7 @@ void sha256_update(sha256_context *ctx, const uint8_t buffer[], size_t len)
 	}
 }
 
-void sha256_final(sha256_context *ctx)
+void sha256_finalize(sha256_context *ctx)
 {
 	uint32_t i;
 
@@ -168,7 +168,7 @@ void sha256(FILE *stream, uint64_t stream_len, uint8_t *sha256_result)
     sha256_update(&ctx, input_buffer, input_size);
     for (unsigned i = 0; i < 1024; i++) { input_buffer[i] = 0; }
   }
-  sha256_final(&ctx);
+  sha256_finalize(&ctx);
 
   // pass result to main
   memcpy(sha256_result, ctx.digest, 32);
