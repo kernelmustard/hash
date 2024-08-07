@@ -1,3 +1,18 @@
+/*********************************************************************
+* Filename:   main.c
+* Author:     kernelmustard (https://github.com/kernelmustard)
+* Copyright:  GPLv3
+* Details:    This is the main file for handling input and determining which 
+*             hashing functions to run
+*********************************************************************/
+
+/**
+ * @file main.c
+ * @author kernelmustard (https://github.com/kernelmustard)
+ * @copyright GPLv3
+ * @brief Main function for hash program
+ */
+
 #include "main.h"
 #include "crc32/crc32.c"
 #include "md5/md5.c"
@@ -6,7 +21,7 @@
 
 
 uint8_t arg_flags = 0;
-/* first
+/* 
  * 0 verbose  (0x01)
  * 0 file     (0x02)
  * 0 string   (0x04)

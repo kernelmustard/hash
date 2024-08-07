@@ -1,12 +1,11 @@
-/*********************************************************************
-* Filename:   sha256.c
-* Author:     kernelmustard (https://github.com/kernelmustard)
-* Copyright:  GPLv3
-* Details:    This implementation uses little endian uint8_t order
-* Note:       Derived from Brad Conte (brad AT bradconte.com). His 
-              implementation can be found at 
-              https://github.com/B-Con/crypto-algorithms/blob/master/sha256.c
-*********************************************************************/
+/**
+ * @file sha256.c
+ * @author kernelmustard (https://github.com/kernelmustard)
+ * @copyright GPLv3
+ * @brief Interface to SHA256 implementation
+ * @note  Derived from Brad Conte (brad AT bradconte.com). His implementation 
+ *        can be found at https://github.com/B-Con/crypto-algorithms/blob/master/sha256.c
+ */
 
 #include "sha256.h"
 

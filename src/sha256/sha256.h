@@ -1,5 +1,5 @@
 /**
- * @file 
+ * @file sha256.h
  * @author kernelmustard (https://github.com/kernelmustard)
  * @copyright GPLv3
  * @brief Interface to SHA256 implementation
